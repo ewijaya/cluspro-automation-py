@@ -1,0 +1,4 @@
+job_name,peptide_name,receptor_name
+test-dock-1,peptide1,receptorA
+test-dock-2,peptide2,receptorA
+test-dock-3,peptide1,receptorB

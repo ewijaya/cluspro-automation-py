@@ -1,0 +1,4 @@
+job_name,receptor_pdb,ligand_pdb,server
+test-dock-1,/path/to/receptor1.pdb,/path/to/ligand1.pdb,gpu
+test-dock-2,/path/to/receptor1.pdb,/path/to/ligand2.pdb,gpu
+test-dock-3,/path/to/receptor2.pdb,/path/to/ligand1.pdb,gpu

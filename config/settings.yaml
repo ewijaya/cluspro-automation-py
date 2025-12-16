@@ -1,0 +1,68 @@
+# ClusPro Automation Configuration
+# Copy to ~/.cluspro/settings.yaml for user-specific settings
+
+cluspro:
+  urls:
+    home: "https://cluspro.bu.edu/home.php"
+    queue: "https://cluspro.org/queue.php"
+    results: "https://cluspro.org/results.php"
+    models: "https://cluspro.bu.edu/models.php"
+
+browser:
+  # Browser type: firefox (recommended) or chrome
+  type: "firefox"
+
+  # Run in headless mode (no visible browser window)
+  headless: true
+
+  # Implicit wait time for element location (seconds)
+  implicit_wait: 10
+
+  # Page load timeout (seconds)
+  page_load_timeout: 30
+
+  # Firefox binary path (optional, auto-detected if not set)
+  # firefox_binary: "/Applications/Firefox.app/Contents/MacOS/firefox"
+
+paths:
+  # Default output directory for downloaded results
+  output_dir: "~/Desktop/ClusPro_results"
+
+  # Directory for organized results (peptide_v_receptor format)
+  organized_dir: "~/Desktop/ClusPro_results/full_names"
+
+timeouts:
+  # Wait time after job submission (seconds)
+  submission_wait: 10
+
+  # Wait time for page loads (seconds)
+  page_load_wait: 3
+
+  # Wait time for file downloads (seconds)
+  download_wait: 10
+
+  # Delay between batch job submissions (seconds)
+  between_jobs: 10
+
+batch:
+  # Maximum number of result pages to parse
+  max_pages_to_parse: 50
+
+  # Jobs per submission chunk (for throttling)
+  jobs_per_chunk: 45
+
+download:
+  # MIME types to auto-download without prompt
+  mime_types:
+    - "application/x-bzip2"
+    - "text/csv"
+    - "text/plain"
+    - "application/json"
+    - "application/zip"
+
+logging:
+  # Log level: DEBUG, INFO, WARNING, ERROR
+  level: "INFO"
+
+  # Log file path (optional, logs to console if not set)
+  # file: "~/.cluspro/cluspro.log"
