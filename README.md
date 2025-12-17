@@ -24,7 +24,8 @@ Automates job submission, queue monitoring, results parsing, and file downloadin
 ### Install from source
 
 ```bash
-cd /Users/e_wijaya_ap/Various_Projects/cluspro-automation-py
+git clone <repo-url>
+cd cluspro-automation-py
 
 # Create virtual environment (recommended)
 python -m venv venv
@@ -32,12 +33,26 @@ source venv/bin/activate  # On Windows: venv\Scripts\activate
 
 # Install in development mode
 pip install -e .
-
-# Or install dependencies only
-pip install -r requirements.txt
 ```
 
 ## Quick Start
+
+For a complete step-by-step guide, see [docs/WORKFLOW.md](docs/WORKFLOW.md).
+
+### Verify Installation
+
+Test the installation using the included example PDB files:
+
+```bash
+# Submit a test job
+cluspro submit -n "test-job" \
+  -r examples/receptor.pdb \
+  -l examples/ligand.pdb \
+  -s gpu
+
+# Verify submission
+cluspro queue --pattern "test-.*"
+```
 
 ### CLI Usage
 
@@ -346,6 +361,13 @@ pip install --upgrade webdriver-manager
 
 # Clear webdriver cache
 rm -rf ~/.wdm
+```
+
+**macOS**: If Firefox isn't detected, specify the binary path in `~/.cluspro/settings.yaml`:
+
+```yaml
+browser:
+  firefox_binary: /Applications/Firefox.app/Contents/MacOS/firefox
 ```
 
 ### Download Failures
