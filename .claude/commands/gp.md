@@ -60,6 +60,6 @@ I'll use that instead.
 Now I'll commit with the generated message and push to remote:
 
 ! git commit -m "<generated or custom message>"
-! git push
+! git remote | xargs -I {} git push {} main
 
-Done! Your changes have been committed and pushed to the remote repository.
+Done! Your changes have been committed and pushed to all remote repositories.
