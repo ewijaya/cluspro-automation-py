@@ -524,5 +524,168 @@ def config(ctx):
     click.echo(yaml.dump(ctx.obj["config"], default_flow_style=False))
 
 
+# ============================================================================
+# Jobs Commands (Database Operations)
+# ============================================================================
+
+
+@main.group()
+@click.pass_context
+def jobs(ctx):
+    """
+    Manage job records and batch operations.
+
+    \b
+    Commands:
+      list    List job records from database
+      resume  Resume interrupted batch submission
+      status  Show batch status summary
+    """
+    pass
+
+
+@jobs.command("list")
+@click.option("--status", type=click.Choice(["pending", "submitted", "queued", "running", "completed", "failed", "cancelled"]), help="Filter by status")
+@click.option("--batch", "batch_id", help="Filter by batch ID")
+@click.option("--limit", default=50, help="Maximum records to show")
+@click.pass_context
+def jobs_list(ctx, status: Optional[str], batch_id: Optional[str], limit: int):
+    """
+    List job records from database.
+
+    \b
+    Example:
+      cluspro jobs list --status pending
+      cluspro jobs list --batch my-batch-001
+    """
+    from cluspro.database import JobDatabase, JobStatus
+
+    try:
+        db = JobDatabase()
+
+        if batch_id:
+            jobs_list = db.get_jobs_by_batch(batch_id)
+        elif status:
+            jobs_list = db.get_all_jobs(status=JobStatus(status), limit=limit)
+        else:
+            jobs_list = db.get_all_jobs(limit=limit)
+
+        if not jobs_list:
+            click.echo("No jobs found")
+            return
+
+        click.echo(f"\nFound {len(jobs_list)} jobs:\n")
+
+        # Format as table
+        headers = ["ID", "Name", "ClusPro ID", "Status", "Submitted"]
+        widths = [6, 25, 12, 12, 20]
+
+        header_line = " | ".join(h.ljust(w) for h, w in zip(headers, widths))
+        click.echo(header_line)
+        click.echo("-" * len(header_line))
+
+        for job in jobs_list:
+            submitted = job.submitted_at.strftime("%Y-%m-%d %H:%M") if job.submitted_at else "-"
+            row = [
+                str(job.id).ljust(6),
+                job.job_name[:25].ljust(25),
+                str(job.cluspro_job_id or "-").ljust(12),
+                job.status.value.ljust(12),
+                submitted.ljust(20),
+            ]
+            click.echo(" | ".join(row))
+
+    except Exception as e:
+        click.echo(f"Error: {e}", err=True)
+        sys.exit(1)
+
+
+@jobs.command("resume")
+@click.option("--batch", "batch_id", required=True, help="Batch ID to resume")
+@click.option("--include-failed", is_flag=True, help="Also retry failed jobs")
+@click.option("--no-headless", is_flag=True, help="Show browser window")
+@click.pass_context
+def jobs_resume(ctx, batch_id: str, include_failed: bool, no_headless: bool):
+    """
+    Resume an interrupted batch submission.
+
+    \b
+    Example:
+      cluspro jobs resume --batch my-batch-001
+      cluspro jobs resume --batch my-batch-001 --include-failed
+    """
+    from cluspro.database import JobDatabase, JobStatus
+    from cluspro.submit import submit_job
+
+    try:
+        db = JobDatabase()
+
+        # Get pending jobs
+        pending = db.get_pending_jobs(batch_id=batch_id)
+
+        if include_failed:
+            failed = db.get_failed_jobs(batch_id=batch_id)
+            pending.extend(failed)
+
+        if not pending:
+            click.echo(f"No pending jobs found for batch: {batch_id}")
+            return
+
+        click.echo(f"Resuming {len(pending)} jobs from batch: {batch_id}")
+
+        success = 0
+        for job in pending:
+            try:
+                cluspro_id = submit_job(
+                    job_name=job.job_name,
+                    receptor_pdb=job.receptor_pdb,
+                    ligand_pdb=job.ligand_pdb,
+                    server=job.server,
+                    headless=not no_headless,
+                    config=ctx.obj["config"],
+                )
+                db.update_status(job.id, JobStatus.SUBMITTED, cluspro_job_id=int(cluspro_id) if cluspro_id else None)
+                success += 1
+                click.echo(f"  Submitted: {job.job_name}")
+            except Exception as e:
+                db.update_status(job.id, JobStatus.FAILED, error_message=str(e))
+                click.echo(f"  Failed: {job.job_name} - {e}", err=True)
+
+        click.echo(f"\nCompleted: {success}/{len(pending)} jobs submitted")
+
+    except Exception as e:
+        click.echo(f"Error: {e}", err=True)
+        sys.exit(1)
+
+
+@jobs.command("status")
+@click.option("--batch", "batch_id", required=True, help="Batch ID")
+@click.pass_context
+def jobs_status(ctx, batch_id: str):
+    """
+    Show batch status summary.
+
+    \b
+    Example:
+      cluspro jobs status --batch my-batch-001
+    """
+    from cluspro.database import JobDatabase
+
+    try:
+        db = JobDatabase()
+        summary = db.get_batch_summary(batch_id)
+
+        click.echo(f"\nBatch: {batch_id}")
+        click.echo(f"  Total:     {summary['total']}")
+        click.echo(f"  Pending:   {summary['pending']}")
+        click.echo(f"  Submitted: {summary['submitted']}")
+        click.echo(f"  Completed: {summary['completed']}")
+        click.echo(f"  Failed:    {summary['failed']}")
+
+    except Exception as e:
+        click.echo(f"Error: {e}", err=True)
+        sys.exit(1)
+
+
 if __name__ == "__main__":
     main()

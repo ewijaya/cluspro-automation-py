@@ -19,6 +19,7 @@ from selenium.webdriver.support import expected_conditions as EC
 from tqdm import tqdm
 
 from cluspro.browser import browser_session, click_guest_login, wait_for_element
+from cluspro.retry import retry_download, with_retry
 from cluspro.utils import ensure_dir, expand_sequences, load_config, resolve_path
 
 logger = logging.getLogger(__name__)
@@ -28,6 +29,51 @@ class DownloadError(Exception):
     """Exception raised when download fails."""
 
     pass
+
+
+@retry_download
+def _download_pdb_models(driver, wait, download_wait: int) -> None:
+    """
+    Download PDB models with retry on transient failures.
+
+    Args:
+        driver: WebDriver instance
+        wait: WebDriverWait instance
+        download_wait: Time to wait for download to complete
+    """
+    download_link = wait.until(
+        EC.element_to_be_clickable(
+            (By.LINK_TEXT, "Download all Models for all Coefficients")
+        )
+    )
+    download_link.click()
+    logger.debug("Clicked download models link")
+    time.sleep(download_wait)
+
+
+@retry_download
+def _download_scores(driver, wait) -> None:
+    """
+    Download model scores with retry on transient failures.
+
+    Args:
+        driver: WebDriver instance
+        wait: WebDriverWait instance
+    """
+    scores_link = wait.until(
+        EC.element_to_be_clickable((By.LINK_TEXT, "View Model Scores"))
+    )
+    scores_link.click()
+    time.sleep(2)
+
+    download_scores_link = wait.until(
+        EC.element_to_be_clickable(
+            (By.LINK_TEXT, "Download Model Scores for this Coefficient")
+        )
+    )
+    download_scores_link.click()
+    logger.debug("Clicked download scores link")
+    time.sleep(5)
 
 
 def download_results(
@@ -104,49 +150,18 @@ def download_results(
             job_output_dir = output_path / job_name
             job_output_dir.mkdir(parents=True, exist_ok=True)
 
-            # Download PDB models if requested
+            # Download PDB models if requested (with automatic retry)
             if download_pdb:
                 try:
-                    download_link = wait.until(
-                        EC.element_to_be_clickable(
-                            (By.LINK_TEXT, "Download all Models for all Coefficients")
-                        )
-                    )
-                    download_link.click()
-                    logger.debug("Clicked download models link")
-
-                    # Wait for download to complete
-                    time.sleep(download_wait)
-
-                    # Extract the downloaded tar.bz2 archive
+                    _download_pdb_models(driver, wait, download_wait)
                     extract_archive(output_path, job_output_dir)
-
                 except NoSuchElementException:
                     logger.warning("Download models link not found, skipping PDB download")
 
-            # Navigate to model scores page
+            # Download model scores (with automatic retry)
             try:
-                scores_link = wait.until(
-                    EC.element_to_be_clickable((By.LINK_TEXT, "View Model Scores"))
-                )
-                scores_link.click()
-                time.sleep(2)
-
-                # Download model scores CSV
-                download_scores_link = wait.until(
-                    EC.element_to_be_clickable(
-                        (By.LINK_TEXT, "Download Model Scores for this Coefficient")
-                    )
-                )
-                download_scores_link.click()
-                logger.debug("Clicked download scores link")
-
-                # Wait for download
-                time.sleep(5)
-
-                # Move and rename CSV file
+                _download_scores(driver, wait)
                 move_score_file(output_path, job_output_dir)
-
             except NoSuchElementException:
                 logger.warning("Model scores link not found")
 
@@ -158,9 +173,12 @@ def download_results(
             raise DownloadError(f"Failed to download job {job_id}: {e}") from e
 
 
+@with_retry(max_attempts=3, min_wait=2, exceptions=(OSError, IOError, subprocess.CalledProcessError))
 def extract_archive(download_dir: Path, output_dir: Path) -> None:
     """
     Extract downloaded tar.bz2 archive.
+
+    Automatically retries on transient I/O failures.
 
     Args:
         download_dir: Directory where archive was downloaded

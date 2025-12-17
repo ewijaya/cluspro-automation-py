@@ -66,3 +66,21 @@ logging:
 
   # Log file path (optional, logs to console if not set)
   # file: "~/.cluspro/cluspro.log"
+
+retry:
+  # Maximum number of retry attempts for failed operations
+  max_attempts: 3
+
+  # Minimum wait time between retries (seconds)
+  min_wait: 2
+
+  # Maximum wait time between retries (seconds)
+  max_wait: 60
+
+  # Exponential backoff multiplier
+  multiplier: 2
+
+database:
+  # Path to SQLite database for job tracking
+  # Default: ~/.cluspro/jobs.db
+  # path: "~/.cluspro/jobs.db"

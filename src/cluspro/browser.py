@@ -17,6 +17,7 @@ from selenium.webdriver.support.ui import WebDriverWait
 from webdriver_manager.firefox import GeckoDriverManager
 
 from cluspro.utils import load_config
+from cluspro.retry import retry_browser
 
 logger = logging.getLogger(__name__)
 
@@ -162,11 +163,13 @@ def wait_for_element(driver: webdriver.Firefox, timeout: int = 10):
     return WebDriverWait(driver, timeout)
 
 
+@retry_browser
 def click_guest_login(driver: webdriver.Firefox) -> None:
     """
     Click the guest login link on ClusPro pages.
 
     This is required on most ClusPro pages before accessing content.
+    Automatically retries on transient Selenium failures.
 
     Args:
         driver: WebDriver instance on a ClusPro page

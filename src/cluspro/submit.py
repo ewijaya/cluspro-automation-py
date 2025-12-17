@@ -15,6 +15,7 @@ from selenium.webdriver.support import expected_conditions as EC
 from tqdm import tqdm
 
 from cluspro.browser import browser_session, click_guest_login, wait_for_element
+from cluspro.retry import retry_browser
 from cluspro.utils import load_config, validate_pdb_file
 
 logger = logging.getLogger(__name__)
@@ -24,6 +25,63 @@ class SubmissionError(Exception):
     """Exception raised when job submission fails."""
 
     pass
+
+
+@retry_browser
+def _fill_and_submit_form(
+    driver,
+    wait,
+    job_name: str,
+    receptor_path: Path,
+    ligand_path: Path,
+    server: str,
+) -> None:
+    """
+    Fill and submit the ClusPro job form.
+
+    This helper is wrapped with retry to handle transient Selenium failures.
+    """
+    # Fill job name
+    job_name_input = wait.until(
+        EC.presence_of_element_located((By.NAME, "jobname"))
+    )
+    job_name_input.clear()
+    job_name_input.send_keys(job_name)
+    logger.debug(f"Entered job name: {job_name}")
+
+    # Select server type
+    server_select = driver.find_element(By.NAME, "server")
+    server_select.send_keys(server)
+    logger.debug(f"Selected server: {server}")
+
+    # Upload receptor PDB
+    show_rec_button = driver.find_element(By.ID, "showrecfile")
+    show_rec_button.click()
+    time.sleep(0.5)
+
+    receptor_input = driver.find_element(By.ID, "rec")
+    receptor_input.send_keys(str(receptor_path))
+    logger.debug("Uploaded receptor PDB")
+
+    # Upload ligand PDB
+    show_lig_button = driver.find_element(By.ID, "showligfile")
+    show_lig_button.click()
+    time.sleep(0.5)
+
+    ligand_input = driver.find_element(By.ID, "lig")
+    ligand_input.send_keys(str(ligand_path))
+    logger.debug("Uploaded ligand PDB")
+
+    # Check non-commercial agreement
+    agree_checkbox = driver.find_element(By.NAME, "noncommercial")
+    if not agree_checkbox.is_selected():
+        agree_checkbox.click()
+    logger.debug("Checked non-commercial agreement")
+
+    # Submit job
+    submit_button = driver.find_element(By.NAME, "action")
+    submit_button.click()
+    logger.debug("Clicked submit button")
 
 
 def submit_job(
@@ -88,49 +146,15 @@ def submit_job(
 
             wait = wait_for_element(driver, timeout=15)
 
-            # Fill job name
-            job_name_input = wait.until(
-                EC.presence_of_element_located((By.NAME, "jobname"))
+            # Fill and submit form (with automatic retry)
+            _fill_and_submit_form(
+                driver=driver,
+                wait=wait,
+                job_name=job_name,
+                receptor_path=receptor_path,
+                ligand_path=ligand_path,
+                server=server,
             )
-            job_name_input.clear()
-            job_name_input.send_keys(job_name)
-            logger.debug(f"Entered job name: {job_name}")
-
-            # Select server type
-            server_select = driver.find_element(By.NAME, "server")
-            server_select.send_keys(server)
-            logger.debug(f"Selected server: {server}")
-
-            # Upload receptor PDB
-            # First click to show the file input
-            show_rec_button = driver.find_element(By.ID, "showrecfile")
-            show_rec_button.click()
-            time.sleep(0.5)
-
-            receptor_input = driver.find_element(By.ID, "rec")
-            receptor_input.send_keys(str(receptor_path))
-            logger.debug("Uploaded receptor PDB")
-
-            # Upload ligand PDB
-            # First click to show the file input
-            show_lig_button = driver.find_element(By.ID, "showligfile")
-            show_lig_button.click()
-            time.sleep(0.5)
-
-            ligand_input = driver.find_element(By.ID, "lig")
-            ligand_input.send_keys(str(ligand_path))
-            logger.debug("Uploaded ligand PDB")
-
-            # Check non-commercial agreement
-            agree_checkbox = driver.find_element(By.NAME, "noncommercial")
-            if not agree_checkbox.is_selected():
-                agree_checkbox.click()
-            logger.debug("Checked non-commercial agreement")
-
-            # Submit job
-            submit_button = driver.find_element(By.NAME, "action")
-            submit_button.click()
-            logger.debug("Clicked submit button")
 
             # Wait for submission to complete
             time.sleep(submission_wait)

@@ -25,6 +25,8 @@ from cluspro.queue import get_queue_status
 from cluspro.results import get_finished_jobs, expand_sequences, group_sequences
 from cluspro.download import download_results, download_batch
 from cluspro.organize import organize_results
+from cluspro.database import JobDatabase, JobStatus, Job
+from cluspro.retry import retry_browser, retry_download, with_retry
 
 __all__ = [
     # Browser
@@ -43,4 +45,12 @@ __all__ = [
     "download_batch",
     # Organization
     "organize_results",
+    # Database
+    "JobDatabase",
+    "JobStatus",
+    "Job",
+    # Retry
+    "retry_browser",
+    "retry_download",
+    "with_retry",
 ]
