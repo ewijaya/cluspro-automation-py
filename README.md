@@ -11,8 +11,12 @@ Automates job submission, queue monitoring, results parsing, and file downloadin
 - **Results Parsing**: Parse completed jobs across multiple result pages
 - **Download**: Download PDB models and energy scores
 - **File Organization**: Organize results into meaningful directory structures
+- **Job Persistence**: SQLite database for tracking jobs and resuming interrupted batches
+- **Retry Logic**: Automatic retry with exponential backoff for flaky operations
 - **CLI Interface**: Full command-line interface for all operations
 - **No External Server**: Uses `webdriver-manager` - no need to manually run Selenium server
+
+[![CI](https://github.com/ewijaya/cluspro-automation-py/actions/workflows/ci.yml/badge.svg)](https://github.com/ewijaya/cluspro-automation-py/actions/workflows/ci.yml)
 
 ## Installation
 
@@ -183,6 +187,31 @@ cluspro compress 1154309 1154310 1154311 1154315
 cluspro config
 ```
 
+### Jobs Commands (Database)
+
+Track and resume batch submissions using the built-in job database:
+
+```bash
+# List all tracked jobs
+cluspro jobs list
+
+# List jobs by status
+cluspro jobs list --status pending
+cluspro jobs list --status failed
+
+# List jobs in a specific batch
+cluspro jobs list --batch my-batch-001
+
+# Show batch summary
+cluspro jobs status --batch my-batch-001
+
+# Resume interrupted batch submission
+cluspro jobs resume --batch my-batch-001
+
+# Resume including failed jobs (retry)
+cluspro jobs resume --batch my-batch-001 --include-failed
+```
+
 ## Configuration
 
 Default configuration is in `config/settings.yaml`.
@@ -212,6 +241,15 @@ timeouts:
 
 batch:
   max_pages_to_parse: 50  # Max result pages to scan
+
+retry:
+  max_attempts: 3         # Retry attempts for failed operations
+  min_wait: 2             # Min wait between retries (seconds)
+  max_wait: 60            # Max wait between retries (seconds)
+  multiplier: 2           # Exponential backoff multiplier
+
+database:
+  # path: "~/.cluspro/jobs.db"  # Job tracking database location
 ```
 
 ## Python API Reference
@@ -302,6 +340,59 @@ ids = expand_sequences("1154309:1154312,1154315")
 
 # Compress: [1, 2, 3, 5] -> "1:3,5"
 compressed = group_sequences([1154309, 1154310, 1154311, 1154315])
+```
+
+### Database Module
+
+```python
+from cluspro import JobDatabase, JobStatus, Job
+
+# Initialize database (creates ~/.cluspro/jobs.db if needed)
+db = JobDatabase()
+
+# Create a job record
+job = db.create_job(
+    job_name="my-job",
+    receptor_pdb="/path/to/receptor.pdb",
+    ligand_pdb="/path/to/ligand.pdb",
+    batch_id="batch-001"
+)
+
+# Update job status after submission
+db.update_status(job.id, JobStatus.SUBMITTED, cluspro_id=1154309)
+
+# Get all pending jobs in a batch
+pending = db.get_pending_jobs(batch_id="batch-001")
+
+# Get failed jobs for retry
+failed = db.get_failed_jobs(batch_id="batch-001")
+
+# Get batch summary
+summary = db.get_batch_summary("batch-001")
+print(f"Completed: {summary['completed']}/{summary['total']}")
+```
+
+### Retry Module
+
+```python
+from cluspro import retry_browser, retry_download, with_retry
+
+# Use pre-configured decorators
+@retry_browser
+def my_selenium_operation(driver):
+    """Retries on WebDriverException, TimeoutException, etc."""
+    driver.find_element(By.ID, "submit").click()
+
+@retry_download
+def my_download_operation():
+    """Retries on network and file errors."""
+    download_file(url, path)
+
+# Custom retry configuration
+@with_retry(max_attempts=5, min_wait=1, max_wait=30)
+def my_custom_operation():
+    """Custom retry logic."""
+    pass
 ```
 
 ## Complete Workflow Example

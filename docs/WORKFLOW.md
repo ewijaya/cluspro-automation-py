@@ -201,13 +201,87 @@ ClusPro_results/full_names/
 | Task | Command |
 |------|---------|
 | Submit single job | `cluspro submit -n NAME -r REC.pdb -l LIG.pdb` |
-| Submit batch | `cluspro submit-batch -i jobs.csv` |
+| Submit batch | `cluspro submit-batch -i jobs.csv --batch-id ID` |
 | Check queue | `cluspro queue --pattern "PREFIX-.*"` |
 | Check results | `cluspro results --pattern "PREFIX-.*"` |
 | Download single | `cluspro download --job-id ID --pdb` |
 | Download batch | `cluspro download-batch --ids "ID1:ID2" --pdb` |
 | Organize files | `cluspro organize -i mapping.csv` |
+| List tracked jobs | `cluspro jobs list --batch ID` |
+| Resume batch | `cluspro jobs resume --batch ID` |
 | Show config | `cluspro config` |
+
+## Job Tracking Workflow
+
+The CLI includes a job database for tracking submissions and resuming interrupted batches.
+
+### Track Batch Submissions
+
+When submitting jobs, they are automatically tracked in the database:
+
+```bash
+# Submit batch - jobs are tracked with batch ID
+cluspro submit-batch -i jobs.csv --batch-id "experiment-001"
+```
+
+### View Tracked Jobs
+
+```bash
+# List all tracked jobs
+cluspro jobs list
+
+# List jobs by status
+cluspro jobs list --status pending
+cluspro jobs list --status failed
+cluspro jobs list --status completed
+
+# List jobs in a specific batch
+cluspro jobs list --batch experiment-001
+```
+
+**Output:**
+```
+Jobs in batch 'experiment-001':
+
+  ID  Name              Status     ClusPro ID
+  1   dock-pep1-rec1    completed  1375534
+  2   dock-pep2-rec1    completed  1375535
+  3   dock-pep3-rec1    failed     -
+```
+
+### Check Batch Status
+
+```bash
+cluspro jobs status --batch experiment-001
+```
+
+**Output:**
+```
+Batch 'experiment-001' summary:
+  Total: 10
+  Pending: 0
+  Submitted: 0
+  Completed: 8
+  Failed: 2
+```
+
+### Resume Interrupted Batches
+
+If a batch submission is interrupted (network issue, timeout, etc.), resume it:
+
+```bash
+# Resume pending jobs only
+cluspro jobs resume --batch experiment-001
+
+# Resume including failed jobs (retry)
+cluspro jobs resume --batch experiment-001 --include-failed
+```
+
+The database automatically tracks:
+- Job submission status
+- ClusPro job IDs
+- Error messages for failed jobs
+- Timestamps for all state changes
 
 ## Tips
 
@@ -216,3 +290,5 @@ ClusPro_results/full_names/
 3. **Batch delays**: Jobs are submitted with delays between them to avoid overwhelming the server
 4. **Check queue first**: Before downloading, verify jobs are finished with `cluspro results`
 5. **Organize early**: Create your mapping CSV before submitting to make organization easier later
+6. **Use batch IDs**: Always specify `--batch-id` when submitting batches for easy tracking and resumption
+7. **Retry failed jobs**: Use `cluspro jobs resume --include-failed` to retry jobs that failed due to transient errors
