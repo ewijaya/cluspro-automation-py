@@ -28,7 +28,7 @@ class TestSubmitJob:
         mock_element = MagicMock()
         mock_wait.until = MagicMock(return_value=mock_element)
         mocker.patch("cluspro.submit.wait_for_element", return_value=mock_wait)
-        mocker.patch("cluspro.submit.click_guest_login")
+        mocker.patch("cluspro.submit.authenticate")
         mocker.patch("cluspro.submit._fill_and_submit_form")
         mocker.patch("time.sleep")
 

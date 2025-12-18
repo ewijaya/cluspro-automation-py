@@ -18,7 +18,8 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
 from tqdm import tqdm
 
-from cluspro.browser import browser_session, click_guest_login, wait_for_element
+from cluspro.auth import Credentials
+from cluspro.browser import authenticate, browser_session, wait_for_element
 from cluspro.retry import retry_download, with_retry
 from cluspro.utils import ensure_dir, expand_sequences, load_config, resolve_path
 
@@ -82,6 +83,8 @@ def download_results(
     download_pdb: bool = True,
     headless: bool = True,
     config: Optional[dict] = None,
+    credentials: Optional[Credentials] = None,
+    force_guest: bool = False,
 ) -> Path:
     """
     Download results for a single ClusPro job.
@@ -92,6 +95,8 @@ def download_results(
         download_pdb: Whether to download PDB model files
         headless: Run browser in headless mode
         config: Optional configuration dict
+        credentials: Optional credentials for account login
+        force_guest: Force guest mode even if credentials provided
 
     Returns:
         Path to the job results directory
@@ -129,8 +134,8 @@ def download_results(
             driver.get(job_url)
             logger.debug(f"Navigated to: {job_url}")
 
-            # Click guest login
-            click_guest_login(driver)
+            # Authenticate (guest or account login)
+            authenticate(driver, credentials=credentials, force_guest=force_guest)
             time.sleep(2)
 
             wait = wait_for_element(driver, timeout=15)
@@ -269,6 +274,8 @@ def download_batch(
     headless: bool = True,
     config: Optional[dict] = None,
     progress: bool = True,
+    credentials: Optional[Credentials] = None,
+    force_guest: bool = False,
 ) -> dict:
     """
     Download results for multiple jobs.
@@ -281,6 +288,8 @@ def download_batch(
         headless: Run browser in headless mode
         config: Optional configuration dict
         progress: Show progress bar
+        credentials: Optional credentials for account login
+        force_guest: Force guest mode even if credentials provided
 
     Returns:
         Dict mapping job_id to result (path or error message)
@@ -318,6 +327,8 @@ def download_batch(
                 download_pdb=download_pdb,
                 headless=headless,
                 config=config,
+                credentials=credentials,
+                force_guest=force_guest,
             )
             results[job_id] = {"status": "success", "path": str(result_path)}
 
@@ -343,6 +354,8 @@ def get_job_name_from_page(
     job_id: int,
     headless: bool = True,
     config: Optional[dict] = None,
+    credentials: Optional[Credentials] = None,
+    force_guest: bool = False,
 ) -> Optional[str]:
     """
     Get job name from ClusPro job page.
@@ -351,6 +364,8 @@ def get_job_name_from_page(
         job_id: ClusPro job ID
         headless: Run browser in headless mode
         config: Optional configuration dict
+        credentials: Optional credentials for account login
+        force_guest: Force guest mode even if credentials provided
 
     Returns:
         Job name or None if not found
@@ -369,7 +384,7 @@ def get_job_name_from_page(
     with browser_session(headless=headless, config=config) as driver:
         try:
             driver.get(job_url)
-            click_guest_login(driver)
+            authenticate(driver, credentials=credentials, force_guest=force_guest)
             time.sleep(2)
 
             job_header = driver.find_element(

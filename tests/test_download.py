@@ -25,7 +25,7 @@ class TestDownloadResults:
         mock_session.return_value.__enter__ = MagicMock(return_value=mock_driver)
         mock_session.return_value.__exit__ = MagicMock(return_value=False)
 
-        mocker.patch("cluspro.download.click_guest_login")
+        mocker.patch("cluspro.download.authenticate")
         mocker.patch("cluspro.download.wait_for_element")
         mocker.patch("cluspro.download._download_pdb_models")
         mocker.patch("cluspro.download._download_scores")
@@ -168,7 +168,7 @@ class TestGetJobNameFromPage:
         mock_session.return_value.__enter__ = MagicMock(return_value=mock_driver)
         mock_session.return_value.__exit__ = MagicMock(return_value=False)
 
-        mocker.patch("cluspro.download.click_guest_login")
+        mocker.patch("cluspro.download.authenticate")
         mocker.patch("time.sleep")
 
         from cluspro.download import get_job_name_from_page
@@ -186,7 +186,7 @@ class TestGetJobNameFromPage:
         mock_session.return_value.__enter__ = MagicMock(return_value=mock_driver)
         mock_session.return_value.__exit__ = MagicMock(return_value=False)
 
-        mocker.patch("cluspro.download.click_guest_login")
+        mocker.patch("cluspro.download.authenticate")
         mocker.patch("time.sleep")
 
         from cluspro.download import get_job_name_from_page

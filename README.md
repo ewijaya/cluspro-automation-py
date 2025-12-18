@@ -13,6 +13,7 @@ Automates job submission, queue monitoring, results parsing, and file downloadin
 - **File Organization**: Organize results into meaningful directory structures
 - **Job Persistence**: SQLite database for tracking jobs and resuming interrupted batches
 - **Retry Logic**: Automatic retry with exponential backoff for flaky operations
+- **Authentication**: Guest mode (default) or account login with multiple credential sources
 - **CLI Interface**: Full command-line interface for all operations
 - **No External Server**: Uses `webdriver-manager` - no need to manually run Selenium server
 
@@ -250,6 +251,82 @@ retry:
 
 database:
   # path: "~/.cluspro/jobs.db"  # Job tracking database location
+```
+
+## Authentication
+
+By default, the tool uses **guest mode** (no account required). To use your ClusPro account, configure credentials using one of these methods (in priority order):
+
+### 1. Environment Variables (Recommended)
+
+```bash
+export CLUSPRO_USERNAME="your_username"
+export CLUSPRO_PASSWORD="your_password"
+
+# Now all commands will use account login automatically
+cluspro submit -n "my-job" -r receptor.pdb -l ligand.pdb
+```
+
+### 2. Configuration File
+
+Add credentials to `~/.cluspro/settings.yaml`:
+
+```yaml
+credentials:
+  username: "your_username"
+  password: "your_password"
+  default_mode: "auto"  # auto, guest, or account
+```
+
+### 3. Interactive Prompt
+
+Use `--login` flag to prompt for credentials:
+
+```bash
+cluspro --login submit -n "my-job" -r receptor.pdb -l ligand.pdb
+# Prompts: Username: _
+# Prompts: Password: _
+```
+
+### CLI Flags
+
+| Flag | Description |
+|------|-------------|
+| `--guest` | Force guest mode (ignore any configured credentials) |
+| `--login` | Force account login (prompts if no credentials found) |
+| (none) | Auto mode: uses account if credentials available, otherwise guest |
+
+```bash
+# Force guest mode even with credentials configured
+cluspro --guest submit -n "my-job" -r receptor.pdb -l ligand.pdb
+
+# Force account login
+cluspro --login download --job-id 123456 --pdb
+```
+
+### Python API
+
+```python
+from cluspro import submit_job, get_credentials, Credentials, CredentialSource
+
+# Auto mode (uses credentials if available)
+submit_job("my-job", "receptor.pdb", "ligand.pdb")
+
+# Get credentials from env/config
+creds = get_credentials()
+if creds:
+    print(f"Using {creds.source.value} credentials")
+
+# Force guest mode
+submit_job("my-job", "receptor.pdb", "ligand.pdb", force_guest=True)
+
+# With explicit credentials
+creds = Credentials(
+    username="user",
+    password="pass",
+    source=CredentialSource.CONFIG
+)
+submit_job("my-job", "receptor.pdb", "ligand.pdb", credentials=creds)
 ```
 
 ## Python API Reference

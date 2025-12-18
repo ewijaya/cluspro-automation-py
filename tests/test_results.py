@@ -27,7 +27,7 @@ class TestGetFinishedJobs:
         mock_session.return_value.__enter__ = mocker.MagicMock(return_value=mock_driver)
         mock_session.return_value.__exit__ = mocker.MagicMock(return_value=False)
 
-        mocker.patch("cluspro.results.click_guest_login")
+        mocker.patch("cluspro.results.authenticate")
         mocker.patch("cluspro.results.load_config", return_value=mock_config)
         mocker.patch("time.sleep")
 
@@ -118,7 +118,7 @@ class TestGetResultsSummary:
         mock_session.return_value.__enter__ = mocker.MagicMock(return_value=mock_driver)
         mock_session.return_value.__exit__ = mocker.MagicMock(return_value=False)
 
-        mocker.patch("cluspro.results.click_guest_login")
+        mocker.patch("cluspro.results.authenticate")
         mocker.patch("cluspro.results.load_config", return_value=mock_config)
         mocker.patch("time.sleep")
 
@@ -153,7 +153,7 @@ class TestCheckJobFinished:
         mock_session.return_value.__enter__ = mocker.MagicMock(return_value=mock_driver)
         mock_session.return_value.__exit__ = mocker.MagicMock(return_value=False)
 
-        mocker.patch("cluspro.results.click_guest_login")
+        mocker.patch("cluspro.results.authenticate")
         mocker.patch("cluspro.results.load_config", return_value=mock_config)
         mocker.patch("time.sleep")
 
@@ -177,7 +177,7 @@ class TestCheckJobFinished:
         mock_session.return_value.__enter__ = mocker.MagicMock(return_value=mock_driver)
         mock_session.return_value.__exit__ = mocker.MagicMock(return_value=False)
 
-        mocker.patch("cluspro.results.click_guest_login")
+        mocker.patch("cluspro.results.authenticate")
         mocker.patch("cluspro.results.load_config", return_value=mock_config)
         mocker.patch("time.sleep")
 

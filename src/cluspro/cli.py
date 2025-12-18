@@ -12,6 +12,7 @@ from typing import Optional
 import click
 import pandas as pd
 
+from cluspro.auth import Credentials, get_credentials, has_credentials
 from cluspro.utils import (
     expand_sequences,
     format_job_ids,
@@ -25,10 +26,23 @@ from cluspro.utils import (
 @click.option("-v", "--verbose", is_flag=True, help="Enable verbose output")
 @click.option("-q", "--quiet", is_flag=True, help="Suppress non-error output")
 @click.option("--config", type=click.Path(exists=True), help="Path to config file")
+@click.option("--guest", is_flag=True, help="Force guest mode (no account login)")
+@click.option("--login", is_flag=True, help="Force account login (prompt if needed)")
 @click.pass_context
-def main(ctx, verbose: bool, quiet: bool, config: Optional[str]):
+def main(ctx, verbose: bool, quiet: bool, config: Optional[str], guest: bool, login: bool):
     """
     ClusPro Automation CLI - Automate protein docking with ClusPro web server.
+
+    \b
+    Authentication:
+      By default, uses account login if credentials are available (env vars or config),
+      otherwise falls back to guest mode.
+
+      --guest    Force guest mode even if credentials exist
+      --login    Force account login (prompts for credentials if not found)
+
+      Set CLUSPRO_USERNAME and CLUSPRO_PASSWORD environment variables,
+      or add credentials section to ~/.cluspro/settings.yaml
 
     \b
     Commands:
@@ -41,11 +55,15 @@ def main(ctx, verbose: bool, quiet: bool, config: Optional[str]):
     \b
     Examples:
       cluspro submit --name test-job -r receptor.pdb -l ligand.pdb
-      cluspro queue --pattern "bb-*"
-      cluspro results --pattern "pad-*" --output job_ids.txt
+      cluspro --guest queue --pattern "bb-*"
+      cluspro --login results --pattern "pad-*" --output job_ids.txt
       cluspro download --ids "1154309:1154320" --pdb
     """
     ctx.ensure_object(dict)
+
+    # Validate mutually exclusive flags
+    if guest and login:
+        raise click.UsageError("Cannot use both --guest and --login flags")
 
     # Setup logging
     if quiet:
@@ -58,8 +76,27 @@ def main(ctx, verbose: bool, quiet: bool, config: Optional[str]):
     setup_logging(level=level)
 
     # Load config
-    ctx.obj["config"] = load_config(config)
+    cfg = load_config(config)
+    ctx.obj["config"] = cfg
     ctx.obj["verbose"] = verbose
+    ctx.obj["force_guest"] = guest
+
+    # Handle credentials
+    if guest:
+        # Guest mode forced, no credentials needed
+        ctx.obj["credentials"] = None
+    elif login:
+        # Account login forced, get credentials (prompt if needed)
+        creds = get_credentials(config=cfg, interactive=True)
+        if creds is None:
+            raise click.ClickException(
+                "No credentials available. Set CLUSPRO_USERNAME and CLUSPRO_PASSWORD "
+                "environment variables, or add credentials section to config file."
+            )
+        ctx.obj["credentials"] = creds
+    else:
+        # Auto mode: try to get credentials without prompting
+        ctx.obj["credentials"] = get_credentials(config=cfg, interactive=False)
 
 
 # ============================================================================
@@ -92,6 +129,8 @@ def submit(ctx, name: str, receptor: str, ligand: str, server: str, no_headless:
             server=server,
             headless=not no_headless,
             config=ctx.obj["config"],
+            credentials=ctx.obj.get("credentials"),
+            force_guest=ctx.obj.get("force_guest", False),
         )
         click.echo(f"Job '{name}' submitted successfully")
         if job_id:
@@ -126,6 +165,8 @@ def submit_batch_cmd(ctx, input_file: str, no_headless: bool, stop_on_error: boo
             headless=not no_headless,
             continue_on_error=not stop_on_error,
             config=ctx.obj["config"],
+            credentials=ctx.obj.get("credentials"),
+            force_guest=ctx.obj.get("force_guest", False),
         )
 
         success = len(results[results["status"] == "success"])
@@ -196,6 +237,8 @@ def queue(ctx, user: Optional[str], pattern: Optional[str], no_headless: bool, o
             filter_pattern=pattern,
             headless=not no_headless,
             config=ctx.obj["config"],
+            credentials=ctx.obj.get("credentials"),
+            force_guest=ctx.obj.get("force_guest", False),
         )
 
         if df.empty:
@@ -250,6 +293,8 @@ def results(
             max_pages=max_pages,
             headless=not no_headless,
             config=ctx.obj["config"],
+            credentials=ctx.obj.get("credentials"),
+            force_guest=ctx.obj.get("force_guest", False),
         )
 
         if df.empty:
@@ -303,6 +348,8 @@ def summary(ctx, pattern: Optional[str], max_pages: int, no_headless: bool):
             max_pages=max_pages,
             headless=not no_headless,
             config=ctx.obj["config"],
+            credentials=ctx.obj.get("credentials"),
+            force_guest=ctx.obj.get("force_guest", False),
         )
 
         click.echo("\nResults Summary:")
@@ -347,6 +394,8 @@ def download(ctx, job_id: int, output_dir: Optional[str], pdb: bool, no_headless
             download_pdb=pdb,
             headless=not no_headless,
             config=ctx.obj["config"],
+            credentials=ctx.obj.get("credentials"),
+            force_guest=ctx.obj.get("force_guest", False),
         )
         click.echo(f"Results saved to: {result_path}")
 
@@ -382,6 +431,8 @@ def download_batch_cmd(
             continue_on_error=not stop_on_error,
             headless=not no_headless,
             config=ctx.obj["config"],
+            credentials=ctx.obj.get("credentials"),
+            force_guest=ctx.obj.get("force_guest", False),
         )
 
         success = sum(1 for r in results.values() if r["status"] == "success")
@@ -643,6 +694,8 @@ def jobs_resume(ctx, batch_id: str, include_failed: bool, no_headless: bool):
                     server=job.server,
                     headless=not no_headless,
                     config=ctx.obj["config"],
+                    credentials=ctx.obj.get("credentials"),
+                    force_guest=ctx.obj.get("force_guest", False),
                 )
                 db.update_status(job.id, JobStatus.SUBMITTED, cluspro_job_id=int(cluspro_id) if cluspro_id else None)
                 success += 1

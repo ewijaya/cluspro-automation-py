@@ -1,6 +1,19 @@
 # ClusPro Automation Configuration
 # Copy to ~/.cluspro/settings.yaml for user-specific settings
 
+# Authentication settings
+# Credentials can also be set via environment variables:
+#   CLUSPRO_USERNAME and CLUSPRO_PASSWORD
+credentials:
+  # username: "your_cluspro_username"
+  # password: "your_cluspro_password"
+
+  # Default login behavior: "auto", "guest", "account"
+  # - auto: Use account if credentials available, else guest
+  # - guest: Always use guest mode
+  # - account: Always require account login
+  default_mode: "auto"
+
 cluspro:
   urls:
     home: "https://cluspro.bu.edu/home.php"

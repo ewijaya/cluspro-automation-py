@@ -18,6 +18,7 @@ from webdriver_manager.firefox import GeckoDriverManager
 
 from cluspro.utils import load_config
 from cluspro.retry import retry_browser
+from cluspro.auth import Credentials, AuthenticationError
 
 logger = logging.getLogger(__name__)
 
@@ -185,3 +186,113 @@ def click_guest_login(driver: webdriver.Firefox) -> None:
     )
     guest_link.click()
     logger.debug("Clicked guest login link")
+
+
+@retry_browser
+def perform_login(driver: webdriver.Firefox, credentials: Credentials) -> None:
+    """
+    Perform account login on ClusPro login page.
+
+    Fills in the login form with username/password and submits.
+    Verifies successful login by checking redirect to /home.php.
+
+    Args:
+        driver: WebDriver instance (should be on login.php or will navigate there)
+        credentials: Credentials object with username and password
+
+    Raises:
+        AuthenticationError: If login fails (invalid credentials, page error)
+
+    Example:
+        >>> from cluspro.auth import Credentials, CredentialSource
+        >>> creds = Credentials("user", "pass", CredentialSource.ENVIRONMENT)
+        >>> perform_login(driver, creds)
+    """
+    import time
+
+    from selenium.common.exceptions import NoSuchElementException
+    from selenium.webdriver.common.by import By
+    from selenium.webdriver.support import expected_conditions as EC
+
+    login_url = "https://cluspro.bu.edu/login.php"
+
+    # Navigate to login page if not already there
+    if "login.php" not in driver.current_url:
+        driver.get(login_url)
+        logger.debug(f"Navigated to login page: {login_url}")
+
+    wait = wait_for_element(driver, timeout=15)
+
+    # Fill username
+    username_field = wait.until(EC.presence_of_element_located((By.ID, "username")))
+    username_field.clear()
+    username_field.send_keys(credentials.username)
+
+    # Fill password
+    password_field = driver.find_element(By.ID, "password")
+    password_field.clear()
+    password_field.send_keys(credentials.password)
+
+    # Click login button
+    login_button = driver.find_element(
+        By.XPATH, "//input[@name='action'][@value='Login']"
+    )
+    login_button.click()
+    logger.debug("Submitted login form")
+
+    # Wait for page to load
+    time.sleep(2)
+
+    # Check for login error on page
+    try:
+        error_elem = driver.find_element(By.CLASS_NAME, "error")
+        error_text = error_elem.text
+        raise AuthenticationError(f"Login failed: {error_text}")
+    except NoSuchElementException:
+        pass  # No error element, continue
+
+    # Verify redirect to home.php (successful login)
+    if "/home.php" not in driver.current_url and "/login.php" in driver.current_url:
+        raise AuthenticationError(
+            f"Login may have failed. Expected redirect to /home.php, "
+            f"but still on {driver.current_url}"
+        )
+
+    logger.info(f"Logged in as: {credentials.username}")
+
+
+def authenticate(
+    driver: webdriver.Firefox,
+    credentials: Optional[Credentials] = None,
+    force_guest: bool = False,
+) -> None:
+    """
+    Authenticate to ClusPro using appropriate method.
+
+    Routes to either guest login or account login based on parameters.
+
+    Args:
+        driver: WebDriver instance on a ClusPro page
+        credentials: Optional credentials for account login
+        force_guest: Force guest mode even if credentials provided
+
+    Behavior:
+        - If force_guest=True: Always use guest login
+        - If credentials=None: Use guest login
+        - Otherwise: Use account login with provided credentials
+
+    Example:
+        >>> # Auto-select based on credentials
+        >>> authenticate(driver, credentials=my_creds)
+        >>> # Force guest mode
+        >>> authenticate(driver, credentials=my_creds, force_guest=True)
+    """
+    if force_guest:
+        logger.debug("Using guest login (forced)")
+        click_guest_login(driver)
+    elif credentials is None:
+        logger.debug("Using guest login (no credentials)")
+        click_guest_login(driver)
+    else:
+        logger.debug(f"Using account login (source: {credentials.source.value})")
+        perform_login(driver, credentials)

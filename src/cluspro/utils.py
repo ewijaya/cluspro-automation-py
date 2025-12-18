@@ -58,6 +58,9 @@ def load_config(config_path: Optional[Union[str, Path]] = None) -> dict:
 def get_default_config() -> dict:
     """Return default configuration values."""
     return {
+        "credentials": {
+            "default_mode": "auto",
+        },
         "cluspro": {
             "urls": {
                 "home": "https://cluspro.bu.edu/home.php",

@@ -13,7 +13,8 @@ import pandas as pd
 from bs4 import BeautifulSoup
 from selenium.webdriver.common.by import By
 
-from cluspro.browser import browser_session, click_guest_login
+from cluspro.auth import Credentials
+from cluspro.browser import authenticate, browser_session
 from cluspro.utils import load_config
 
 logger = logging.getLogger(__name__)
@@ -24,6 +25,8 @@ def get_queue_status(
     filter_pattern: Optional[str] = None,
     headless: bool = True,
     config: Optional[dict] = None,
+    credentials: Optional[Credentials] = None,
+    force_guest: bool = False,
 ) -> pd.DataFrame:
     """
     Get current ClusPro job queue status.
@@ -33,6 +36,8 @@ def get_queue_status(
         filter_pattern: Filter job names by regex pattern
         headless: Run browser in headless mode
         config: Optional configuration dict
+        credentials: Optional credentials for account login
+        force_guest: Force guest mode even if credentials provided
 
     Returns:
         DataFrame with queue entries:
@@ -63,8 +68,8 @@ def get_queue_status(
             driver.get(queue_url)
             logger.debug(f"Navigated to: {queue_url}")
 
-            # Click guest login
-            click_guest_login(driver)
+            # Authenticate (guest or account login)
+            authenticate(driver, credentials=credentials, force_guest=force_guest)
             time.sleep(page_load_wait)
 
             # Parse page source
@@ -153,6 +158,8 @@ def check_job_in_queue(
     job_name: str,
     headless: bool = True,
     config: Optional[dict] = None,
+    credentials: Optional[Credentials] = None,
+    force_guest: bool = False,
 ) -> Optional[dict]:
     """
     Check if a specific job is in the queue.
@@ -161,6 +168,8 @@ def check_job_in_queue(
         job_name: Job name to search for
         headless: Run browser in headless mode
         config: Optional configuration dict
+        credentials: Optional credentials for account login
+        force_guest: Force guest mode even if credentials provided
 
     Returns:
         Dict with job info if found, None otherwise
@@ -170,7 +179,12 @@ def check_job_in_queue(
         >>> if job:
         ...     print(f"Job status: {job['status']}")
     """
-    df = get_queue_status(headless=headless, config=config)
+    df = get_queue_status(
+        headless=headless,
+        config=config,
+        credentials=credentials,
+        force_guest=force_guest,
+    )
 
     if df.empty or "job_name" not in df.columns:
         return None
@@ -190,6 +204,8 @@ def wait_for_queue_clear(
     max_wait: int = 3600,
     headless: bool = True,
     config: Optional[dict] = None,
+    credentials: Optional[Credentials] = None,
+    force_guest: bool = False,
 ) -> bool:
     """
     Wait until filtered queue is empty.
@@ -203,6 +219,8 @@ def wait_for_queue_clear(
         max_wait: Maximum wait time in seconds
         headless: Run browser in headless mode
         config: Optional configuration dict
+        credentials: Optional credentials for account login
+        force_guest: Force guest mode even if credentials provided
 
     Returns:
         True if queue cleared, False if timeout
@@ -221,6 +239,8 @@ def wait_for_queue_clear(
             filter_pattern=filter_pattern,
             headless=headless,
             config=config,
+            credentials=credentials,
+            force_guest=force_guest,
         )
 
         if df.empty:

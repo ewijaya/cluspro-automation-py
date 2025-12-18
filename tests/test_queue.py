@@ -29,7 +29,7 @@ class TestGetQueueStatus:
         mock_session.return_value.__enter__ = MagicMock(return_value=mock_driver)
         mock_session.return_value.__exit__ = MagicMock(return_value=False)
 
-        mocker.patch("cluspro.queue.click_guest_login")
+        mocker.patch("cluspro.queue.authenticate")
         mocker.patch("cluspro.queue.load_config", return_value=mock_config)
         mocker.patch("time.sleep")
 
@@ -114,7 +114,7 @@ class TestCheckJobInQueue:
         mock_session.return_value.__enter__ = mocker.MagicMock(return_value=mock_driver)
         mock_session.return_value.__exit__ = mocker.MagicMock(return_value=False)
 
-        mocker.patch("cluspro.queue.click_guest_login")
+        mocker.patch("cluspro.queue.authenticate")
         mocker.patch("cluspro.queue.load_config", return_value=mock_config)
         mocker.patch("time.sleep")
 
@@ -136,7 +136,7 @@ class TestCheckJobInQueue:
         mock_session.return_value.__enter__ = mocker.MagicMock(return_value=mock_driver)
         mock_session.return_value.__exit__ = mocker.MagicMock(return_value=False)
 
-        mocker.patch("cluspro.queue.click_guest_login")
+        mocker.patch("cluspro.queue.authenticate")
         mocker.patch("cluspro.queue.load_config", return_value=mock_config)
         mocker.patch("time.sleep")
 

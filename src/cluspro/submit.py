@@ -14,7 +14,8 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
 from tqdm import tqdm
 
-from cluspro.browser import browser_session, click_guest_login, wait_for_element
+from cluspro.auth import Credentials
+from cluspro.browser import authenticate, browser_session, wait_for_element
 from cluspro.retry import retry_browser
 from cluspro.utils import load_config, validate_pdb_file
 
@@ -91,6 +92,8 @@ def submit_job(
     server: str = "gpu",
     headless: bool = True,
     config: Optional[dict] = None,
+    credentials: Optional[Credentials] = None,
+    force_guest: bool = False,
 ) -> Optional[str]:
     """
     Submit a single docking job to ClusPro.
@@ -102,6 +105,8 @@ def submit_job(
         server: Server type ("gpu" or "cpu", default: "gpu")
         headless: Run browser in headless mode
         config: Optional configuration dict
+        credentials: Optional credentials for account login
+        force_guest: Force guest mode even if credentials provided
 
     Returns:
         Job ID if captured (may be None as ClusPro doesn't always return it)
@@ -140,8 +145,8 @@ def submit_job(
             driver.get(home_url)
             logger.debug(f"Navigated to: {home_url}")
 
-            # Click guest login
-            click_guest_login(driver)
+            # Authenticate (guest or account login)
+            authenticate(driver, credentials=credentials, force_guest=force_guest)
             time.sleep(1)
 
             wait = wait_for_element(driver, timeout=15)
@@ -184,6 +189,8 @@ def submit_batch(
     continue_on_error: bool = True,
     config: Optional[dict] = None,
     progress: bool = True,
+    credentials: Optional[Credentials] = None,
+    force_guest: bool = False,
 ) -> pd.DataFrame:
     """
     Submit multiple docking jobs to ClusPro.
@@ -198,6 +205,8 @@ def submit_batch(
         continue_on_error: Continue with next job if one fails
         config: Optional configuration dict
         progress: Show progress bar
+        credentials: Optional credentials for account login
+        force_guest: Force guest mode even if credentials provided
 
     Returns:
         DataFrame with job submission results:
@@ -257,6 +266,8 @@ def submit_batch(
                 server=server,
                 headless=headless,
                 config=config,
+                credentials=credentials,
+                force_guest=force_guest,
             )
             result["job_id"] = job_id
             result["status"] = "success"
@@ -284,6 +295,8 @@ def submit_from_csv(
     headless: bool = True,
     continue_on_error: bool = True,
     config: Optional[dict] = None,
+    credentials: Optional[Credentials] = None,
+    force_guest: bool = False,
 ) -> pd.DataFrame:
     """
     Submit jobs from a CSV file.
@@ -296,6 +309,8 @@ def submit_from_csv(
         headless: Run browser in headless mode
         continue_on_error: Continue with next job if one fails
         config: Optional configuration dict
+        credentials: Optional credentials for account login
+        force_guest: Force guest mode even if credentials provided
 
     Returns:
         DataFrame with job submission results
@@ -316,6 +331,8 @@ def submit_from_csv(
         headless=headless,
         continue_on_error=continue_on_error,
         config=config,
+        credentials=credentials,
+        force_guest=force_guest,
     )
 
 

@@ -14,7 +14,8 @@ from bs4 import BeautifulSoup
 from selenium.common.exceptions import NoSuchElementException
 from selenium.webdriver.common.by import By
 
-from cluspro.browser import browser_session, click_guest_login
+from cluspro.auth import Credentials
+from cluspro.browser import authenticate, browser_session
 from cluspro.utils import expand_sequences, group_sequences, load_config
 
 logger = logging.getLogger(__name__)
@@ -25,6 +26,8 @@ def get_finished_jobs(
     max_pages: int = 50,
     headless: bool = True,
     config: Optional[dict] = None,
+    credentials: Optional[Credentials] = None,
+    force_guest: bool = False,
 ) -> pd.DataFrame:
     """
     Get completed jobs from ClusPro results pages.
@@ -36,6 +39,8 @@ def get_finished_jobs(
         max_pages: Maximum number of pages to parse
         headless: Run browser in headless mode
         config: Optional configuration dict
+        credentials: Optional credentials for account login
+        force_guest: Force guest mode even if credentials provided
 
     Returns:
         DataFrame with completed jobs:
@@ -71,8 +76,8 @@ def get_finished_jobs(
             driver.get(results_url)
             logger.debug(f"Navigated to: {results_url}")
 
-            # Click guest login
-            click_guest_login(driver)
+            # Authenticate (guest or account login)
+            authenticate(driver, credentials=credentials, force_guest=force_guest)
             time.sleep(page_load_wait)
 
             for page_num in range(1, max_pages + 1):
@@ -184,6 +189,8 @@ def get_job_ids_compressed(
     max_pages: int = 50,
     headless: bool = True,
     config: Optional[dict] = None,
+    credentials: Optional[Credentials] = None,
+    force_guest: bool = False,
 ) -> str:
     """
     Get finished job IDs in compressed notation.
@@ -195,6 +202,8 @@ def get_job_ids_compressed(
         max_pages: Maximum number of pages to parse
         headless: Run browser in headless mode
         config: Optional configuration dict
+        credentials: Optional credentials for account login
+        force_guest: Force guest mode even if credentials provided
 
     Returns:
         Compressed job ID string (e.g., "1154309:1154338,1154340")
@@ -209,6 +218,8 @@ def get_job_ids_compressed(
         max_pages=max_pages,
         headless=headless,
         config=config,
+        credentials=credentials,
+        force_guest=force_guest,
     )
 
     if df.empty or "job_id" not in df.columns:
@@ -222,6 +233,8 @@ def check_job_finished(
     job_id: int,
     headless: bool = True,
     config: Optional[dict] = None,
+    credentials: Optional[Credentials] = None,
+    force_guest: bool = False,
 ) -> bool:
     """
     Check if a specific job has finished.
@@ -230,6 +243,8 @@ def check_job_finished(
         job_id: Job ID to check
         headless: Run browser in headless mode
         config: Optional configuration dict
+        credentials: Optional credentials for account login
+        force_guest: Force guest mode even if credentials provided
 
     Returns:
         True if job is finished, False otherwise
@@ -238,7 +253,13 @@ def check_job_finished(
         >>> if check_job_finished(1154309):
         ...     print("Job is done!")
     """
-    df = get_finished_jobs(max_pages=5, headless=headless, config=config)
+    df = get_finished_jobs(
+        max_pages=5,
+        headless=headless,
+        config=config,
+        credentials=credentials,
+        force_guest=force_guest,
+    )
 
     if df.empty or "job_id" not in df.columns:
         return False
@@ -251,6 +272,8 @@ def get_results_summary(
     max_pages: int = 50,
     headless: bool = True,
     config: Optional[dict] = None,
+    credentials: Optional[Credentials] = None,
+    force_guest: bool = False,
 ) -> dict:
     """
     Get summary statistics of results.
@@ -260,6 +283,8 @@ def get_results_summary(
         max_pages: Maximum number of pages to parse
         headless: Run browser in headless mode
         config: Optional configuration dict
+        credentials: Optional credentials for account login
+        force_guest: Force guest mode even if credentials provided
 
     Returns:
         Dict with summary statistics:
@@ -287,7 +312,7 @@ def get_results_summary(
     with browser_session(headless=headless, config=config) as driver:
         try:
             driver.get(results_url)
-            click_guest_login(driver)
+            authenticate(driver, credentials=credentials, force_guest=force_guest)
             time.sleep(page_load_wait)
 
             for page_num in range(1, max_pages + 1):

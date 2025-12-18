@@ -17,6 +17,9 @@ def cli_runner():
 def mock_config():
     """Standard test configuration."""
     return {
+        "credentials": {
+            "default_mode": "auto",
+        },
         "cluspro": {
             "urls": {
                 "home": "https://cluspro.bu.edu/home.php",
@@ -52,6 +55,18 @@ def mock_config():
             "multiplier": 1,
         },
     }
+
+
+@pytest.fixture
+def mock_credentials():
+    """Mock credentials for testing."""
+    from cluspro.auth import Credentials, CredentialSource
+
+    return Credentials(
+        username="testuser",
+        password="testpass",
+        source=CredentialSource.ENVIRONMENT,
+    )
 
 
 @pytest.fixture
