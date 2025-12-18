@@ -21,7 +21,7 @@ Example usage:
     submit_job("my-job", "receptor.pdb", "ligand.pdb", credentials=creds)
 """
 
-__version__ = "0.1.0"
+__version__ = "0.2.0"
 __author__ = "E Wijaya"
 
 from cluspro.auth import (

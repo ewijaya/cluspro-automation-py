@@ -230,6 +230,7 @@ cp config/settings.yaml ~/.cluspro/settings.yaml
 browser:
   headless: true          # Run without visible browser
   type: "firefox"         # Browser type
+  geckodriver_path: ""    # Optional: direct path to geckodriver (bypasses GitHub API)
 
 paths:
   output_dir: "~/Desktop/ClusPro_results"
@@ -537,6 +538,39 @@ rm -rf ~/.wdm
 browser:
   firefox_binary: /Applications/Firefox.app/Contents/MacOS/firefox
 ```
+
+### GitHub API Rate Limits
+
+The tool automatically handles GitHub API rate limits. When webdriver-manager hits a rate limit, it falls back to using a cached geckodriver from `~/.wdm/drivers/geckodriver/`.
+
+**Manual options** (if automatic fallback doesn't work):
+
+**Option 1**: Specify a geckodriver path directly (bypasses GitHub API entirely):
+
+```yaml
+# ~/.cluspro/settings.yaml
+browser:
+  geckodriver_path: "~/.wdm/drivers/geckodriver/mac64/v0.36.0/geckodriver"
+```
+
+To find your cached geckodriver path:
+```bash
+ls ~/.wdm/drivers/geckodriver/
+```
+
+**Option 2**: Set a GitHub token for higher rate limits:
+```bash
+export GH_TOKEN=your_github_personal_access_token
+```
+
+**Option 3**: Download geckodriver manually:
+1. Download from [Mozilla geckodriver releases](https://github.com/mozilla/geckodriver/releases)
+2. Extract and place in a known location (e.g., `~/.local/bin/geckodriver`)
+3. Add to config:
+   ```yaml
+   browser:
+     geckodriver_path: "~/.local/bin/geckodriver"
+   ```
 
 ### Download Failures
 

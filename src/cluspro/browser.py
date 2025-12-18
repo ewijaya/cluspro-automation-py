@@ -23,6 +23,31 @@ from cluspro.auth import Credentials, AuthenticationError
 logger = logging.getLogger(__name__)
 
 
+def _find_cached_geckodriver() -> Optional[str]:
+    """
+    Find the most recent cached geckodriver in ~/.wdm directory.
+
+    Returns:
+        Path to cached geckodriver executable, or None if not found.
+    """
+    wdm_path = Path.home() / ".wdm" / "drivers" / "geckodriver"
+    if not wdm_path.exists():
+        return None
+
+    # Find all geckodriver executables (handles different OS subdirs)
+    executables = list(wdm_path.glob("**/geckodriver"))
+    if not executables:
+        # Try .exe for Windows
+        executables = list(wdm_path.glob("**/geckodriver.exe"))
+
+    if not executables:
+        return None
+
+    # Return the most recently modified one
+    newest = max(executables, key=lambda p: p.stat().st_mtime)
+    return str(newest)
+
+
 def create_browser(
     headless: bool = True,
     download_dir: Optional[str] = None,
@@ -104,7 +129,25 @@ def create_browser(
         logger.debug(f"Using geckodriver from config: {geckodriver_path}")
         service = FirefoxService(geckodriver_path)
     else:
-        service = FirefoxService(GeckoDriverManager().install())
+        # Try webdriver-manager, fall back to cached driver on API errors
+        try:
+            service = FirefoxService(GeckoDriverManager().install())
+        except Exception as e:
+            error_msg = str(e)
+            if "rate limit" in error_msg.lower() or "API" in error_msg:
+                logger.warning(f"GitHub API error: {e}")
+                logger.info("Falling back to cached geckodriver...")
+                cached_path = _find_cached_geckodriver()
+                if cached_path:
+                    logger.info(f"Using cached geckodriver: {cached_path}")
+                    service = FirefoxService(cached_path)
+                else:
+                    raise RuntimeError(
+                        "GitHub API rate limit exceeded and no cached geckodriver found. "
+                        "Set 'geckodriver_path' in config or wait for rate limit reset."
+                    ) from e
+            else:
+                raise
 
     driver = webdriver.Firefox(service=service, options=options)
 
