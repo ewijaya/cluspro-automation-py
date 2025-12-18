@@ -96,7 +96,16 @@ def create_browser(
 
     # Use webdriver-manager to automatically download and manage geckodriver
     logger.info("Initializing Firefox WebDriver...")
-    service = FirefoxService(GeckoDriverManager().install())
+
+    # Check for direct geckodriver path in config (bypasses GitHub API calls)
+    geckodriver_path = browser_config.get("geckodriver_path")
+    if geckodriver_path:
+        geckodriver_path = str(Path(geckodriver_path).expanduser().resolve())
+        logger.debug(f"Using geckodriver from config: {geckodriver_path}")
+        service = FirefoxService(geckodriver_path)
+    else:
+        service = FirefoxService(GeckoDriverManager().install())
+
     driver = webdriver.Firefox(service=service, options=options)
 
     # Configure timeouts
