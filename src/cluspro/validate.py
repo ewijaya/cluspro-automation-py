@@ -13,11 +13,18 @@ Example usage:
         results_dir="./cluspro_results",
         topology=topology
     )
+
+    # Or fetch directly from UniProt:
+    from cluspro.validate import fetch_topology_from_uniprot
+
+    topology = fetch_topology_from_uniprot("Q3UG50")
 """
 
 import csv
 import json
 import logging
+import urllib.request
+import urllib.error
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Optional
@@ -150,6 +157,109 @@ def _parse_uniprot_topology(data: dict) -> Topology:
 
     # Use first extracellular region for alignment by default
     alignment = extracellular[0] if extracellular else (None, None)
+
+    return Topology(
+        extracellular=extracellular,
+        transmembrane=transmembrane,
+        intracellular=intracellular,
+        alignment_residues=alignment,
+    )
+
+
+def fetch_topology_from_uniprot(accession: str, alignment_region: str = "ECL1") -> Topology:
+    """
+    Fetch receptor topology directly from UniProt REST API.
+
+    Args:
+        accession: UniProt accession ID (e.g., "Q3UG50")
+        alignment_region: Which extracellular region to use for alignment.
+                         Options: "ECL1", "ECL2", "ECL3", "N_term", or "first" (default first EC region)
+
+    Returns:
+        Topology object with extracellular, transmembrane, and intracellular regions
+
+    Raises:
+        ValueError: If accession not found or no topology data available
+
+    Example:
+        topology = fetch_topology_from_uniprot("Q3UG50")
+        topology = fetch_topology_from_uniprot("P25025", alignment_region="ECL2")
+    """
+    url = f"https://rest.uniprot.org/uniprotkb/{accession}.json"
+
+    logger.info(f"Fetching topology from UniProt: {accession}")
+
+    try:
+        with urllib.request.urlopen(url, timeout=30) as response:
+            data = json.loads(response.read().decode("utf-8"))
+    except urllib.error.HTTPError as e:
+        if e.code == 404:
+            raise ValueError(f"UniProt accession not found: {accession}")
+        raise ValueError(f"Failed to fetch from UniProt: {e}")
+    except urllib.error.URLError as e:
+        raise ValueError(f"Network error fetching UniProt data: {e}")
+
+    # Extract topology features
+    extracellular = []
+    transmembrane = []
+    intracellular = []
+    ec_regions = {}  # Track named EC regions for alignment selection
+
+    features = data.get("features", [])
+    topology_features = [
+        f for f in features if f.get("type") in ("Topological domain", "Transmembrane")
+    ]
+
+    if not topology_features:
+        raise ValueError(f"No topology annotations found for {accession}")
+
+    ec_index = 0
+    for feature in topology_features:
+        feat_type = feature.get("type", "")
+        desc = feature.get("description", "").lower()
+        loc = feature.get("location", {})
+        start = loc.get("start", {}).get("value")
+        end = loc.get("end", {}).get("value")
+
+        if start is None or end is None:
+            continue
+
+        region = (start, end)
+
+        if feat_type == "Topological domain":
+            if "extracellular" in desc:
+                extracellular.append(region)
+                # Track region names for alignment selection
+                if ec_index == 0 and start < 50:  # Likely N-terminus
+                    ec_regions["N_term"] = region
+                else:
+                    ec_regions[f"ECL{ec_index}"] = region
+                ec_index += 1
+            elif "cytoplasmic" in desc or "intracellular" in desc:
+                intracellular.append(region)
+        elif feat_type == "Transmembrane":
+            transmembrane.append(region)
+
+    if not extracellular and not transmembrane:
+        raise ValueError(f"No extracellular or transmembrane regions found for {accession}")
+
+    # Select alignment region
+    if alignment_region == "first":
+        alignment = extracellular[0] if extracellular else (None, None)
+    elif alignment_region in ec_regions:
+        alignment = ec_regions[alignment_region]
+    else:
+        # Default to first actual ECL (skip N-terminus if present)
+        if "ECL1" in ec_regions:
+            alignment = ec_regions["ECL1"]
+        elif extracellular:
+            alignment = extracellular[0]
+        else:
+            alignment = (None, None)
+
+    # Get protein name for logging
+    protein_name = data.get("proteinDescription", {}).get("recommendedName", {}).get("fullName", {}).get("value", accession)
+    logger.info(f"Loaded topology for {protein_name}: {len(extracellular)} EC, {len(transmembrane)} TM, {len(intracellular)} IC regions")
 
     return Topology(
         extracellular=extracellular,

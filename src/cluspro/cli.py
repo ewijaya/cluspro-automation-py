@@ -583,7 +583,8 @@ def config(ctx):
 @main.command()
 @click.option("-r", "--receptor", required=True, type=click.Path(exists=True), help="Full receptor PDB file")
 @click.option("-d", "--results-dir", required=True, type=click.Path(exists=True), help="ClusPro results directory")
-@click.option("-t", "--topology", required=True, type=click.Path(exists=True), help="Topology JSON file")
+@click.option("-t", "--topology", type=click.Path(exists=True), help="Topology JSON file")
+@click.option("-u", "--uniprot", help="UniProt accession ID (e.g., Q3UG50) - fetches topology from UniProt API")
 @click.option("-s", "--summary", type=click.Path(exists=True), help="Optional summary CSV (default: scan all)")
 @click.option("-o", "--output-dir", type=click.Path(), help="Output directory for results")
 @click.option("--contact-threshold", default=4.5, type=float, help="Contact distance threshold (Angstroms)")
@@ -594,7 +595,8 @@ def validate(
     ctx,
     receptor: str,
     results_dir: str,
-    topology: str,
+    topology: Optional[str],
+    uniprot: Optional[str],
     summary: Optional[str],
     output_dir: Optional[str],
     contact_threshold: float,
@@ -614,10 +616,17 @@ def validate(
     \b
     Example:
       cluspro validate -r receptor.pdb -d ./results -t topology.json
-      cluspro validate -r receptor.pdb -d ./results -t topology.json -o ./validation
+      cluspro validate -r receptor.pdb -d ./results --uniprot Q3UG50
+      cluspro validate -r receptor.pdb -d ./results --uniprot Q3UG50 -o ./validation
     """
+    # Validate options
+    if not topology and not uniprot:
+        raise click.UsageError("Either --topology or --uniprot is required")
+    if topology and uniprot:
+        raise click.UsageError("Use either --topology or --uniprot, not both")
+
     try:
-        from cluspro.validate import load_topology_from_json, validate_docking
+        from cluspro.validate import load_topology_from_json, fetch_topology_from_uniprot, validate_docking
     except ImportError as e:
         click.echo(
             "Validation requires additional dependencies.\n"
@@ -629,7 +638,11 @@ def validate(
 
     try:
         # Load topology
-        topo = load_topology_from_json(topology)
+        if uniprot:
+            click.echo(f"Fetching topology from UniProt: {uniprot}")
+            topo = fetch_topology_from_uniprot(uniprot)
+        else:
+            topo = load_topology_from_json(topology)
         click.echo(f"Loaded topology: {len(topo.extracellular)} EC, {len(topo.transmembrane)} TM, {len(topo.intracellular)} IC regions")
 
         # Run validation

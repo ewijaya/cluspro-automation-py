@@ -179,14 +179,17 @@ bb-2,hmgb1.144,hLrp1
 Validate docking poses against receptor topology (requires `pip install cluspro-automation-py[validate]`):
 
 ```bash
-# Validate docking results
+# Validate using UniProt accession (fetches topology automatically)
+cluspro validate -r receptor.pdb -d ./results --uniprot Q3UG50
+
+# Or use a local topology JSON file
 cluspro validate -r receptor.pdb -d ./results -t topology.json
 
 # With output directory
-cluspro validate -r receptor.pdb -d ./results -t topology.json -o ./validation
+cluspro validate -r receptor.pdb -d ./results --uniprot Q3UG50 -o ./validation
 
 # Validate all models (not just min-clash per target)
-cluspro validate -r receptor.pdb -d ./results -t topology.json --all-models
+cluspro validate -r receptor.pdb -d ./results --uniprot Q3UG50 --all-models
 ```
 
 **Topology JSON format** (see `examples/MRGX2_MOUSE_topology.json`):
@@ -504,9 +507,12 @@ def my_custom_operation():
 Validate docking poses against receptor topology (requires `pip install cluspro-automation-py[validate]`):
 
 ```python
-from cluspro.validate import validate_docking, load_topology_from_json, Topology
+from cluspro.validate import validate_docking, load_topology_from_json, fetch_topology_from_uniprot, Topology
 
-# Load topology from JSON
+# Fetch topology directly from UniProt (recommended)
+topology = fetch_topology_from_uniprot("Q3UG50")
+
+# Or load from JSON file
 topology = load_topology_from_json("examples/MRGX2_MOUSE_topology.json")
 
 # Or define programmatically
