@@ -1,11 +1,23 @@
 # Docking Validation Guide
 
-Validate ClusPro docking results for membrane receptors by checking if peptides contact biologically appropriate regions.
+Validate ClusPro docking results for **membrane proteins** by checking if ligands contact biologically appropriate regions.
+
+## Applicability
+
+This validation works for **any membrane protein** with defined topology:
+
+- **GPCRs** (G protein-coupled receptors)
+- **Ion channels** (voltage-gated, ligand-gated)
+- **Transporters** (ABC transporters, solute carriers)
+- **Single-pass transmembrane receptors** (receptor tyrosine kinases, cytokine receptors)
+- **Any protein with UniProt topology annotations**
+
+The key requirement: your receptor must have distinct extracellular, transmembrane, and intracellular regions.
 
 ## Table of Contents
 
 - [Motivation](#motivation)
-- [Background: GPCR Topology](#background-gpcr-topology)
+- [Background: Membrane Protein Topology](#background-membrane-protein-topology)
 - [How Validation Works](#how-validation-works)
 - [Getting Topology Data](#getting-topology-data)
 - [Usage Guide](#usage-guide)
@@ -17,19 +29,19 @@ Validate ClusPro docking results for membrane receptors by checking if peptides 
 
 ### The Problem
 
-ClusPro is a powerful protein-protein docking server that ranks models primarily by **cluster size** and **energy scores** ([Kozakov et al., 2017](https://pubmed.ncbi.nlm.nih.gov/28079879/)). While these metrics effectively identify energetically favorable poses, they don't inherently account for **biological validity** when docking to membrane receptors.
+ClusPro is a powerful protein-protein docking server that ranks models primarily by **cluster size** and **energy scores** ([Kozakov et al., 2017](https://pubmed.ncbi.nlm.nih.gov/28079879/)). While these metrics effectively identify energetically favorable poses, they don't inherently account for **biological validity** when docking to membrane proteins.
 
-For G protein-coupled receptors (GPCRs) and other membrane proteins:
+For membrane proteins (GPCRs, ion channels, transporters, etc.):
 
 - **Ligands bind from the extracellular side** - they cannot penetrate the lipid bilayer
-- **Transmembrane regions are embedded in the membrane** - inaccessible to soluble peptides
+- **Transmembrane regions are embedded in the membrane** - inaccessible to soluble ligands
 - **Intracellular regions face the cytoplasm** - unreachable from outside the cell
 
-A docking pose might have an excellent energy score but be biologically impossible if the peptide contacts transmembrane or intracellular regions.
+A docking pose might have an excellent energy score but be biologically impossible if the ligand contacts transmembrane or intracellular regions.
 
 ### Why Validate?
 
-This validation module addresses a critical gap:
+This validation module addresses a critical gap. As noted for GPCRs (which applies to all membrane proteins):
 
 > "In the case of GPCRs, a large hydrophobic surface is responsible for positioning the protein in the membrane and this part does not interact with bound ligands. Therefore, docking simulations should limit the peptide conformational sampling space to the broad neighborhood of the extracellular receptor domain."
 > — [Ciemny et al., 2021](https://pmc.ncbi.nlm.nih.gov/articles/PMC8138832/)
@@ -40,9 +52,21 @@ By analyzing which receptor regions each docked peptide contacts, we can:
 2. **Rank poses by biological validity** - not just energy
 3. **Identify the best candidates** - minimal clashes, maximal extracellular contacts
 
-## Background: GPCR Topology
+## Background: Membrane Protein Topology
 
-### The 7-Transmembrane Structure
+### General Principle
+
+All membrane proteins share a common organization:
+
+| Region | Location | Ligand Accessible? |
+|--------|----------|-------------------|
+| **Extracellular** | Above membrane (or lumenal) | ✅ Yes |
+| **Transmembrane** | Within lipid bilayer | ❌ No |
+| **Intracellular** | Below membrane (cytoplasmic) | ❌ No |
+
+UniProt annotates these regions as "Topological domain" features, which this tool parses automatically.
+
+### Example: GPCR 7-Transmembrane Structure
 
 GPCRs are characterized by seven transmembrane (7-TM) α-helices that span the plasma membrane ([Weis & Kobilka, 2018](https://pmc.ncbi.nlm.nih.gov/articles/PMC6535338/)):
 
@@ -71,7 +95,7 @@ GPCRs are characterized by seven transmembrane (7-TM) α-helices that span the p
                     INTRACELLULAR
 ```
 
-### Region Definitions
+### GPCR Region Definitions
 
 | Region Type | Components | Location | Ligand Accessible? |
 |-------------|-----------|----------|-------------------|
@@ -79,9 +103,22 @@ GPCRs are characterized by seven transmembrane (7-TM) α-helices that span the p
 | **Transmembrane** | TM1-TM7 | Within membrane | ❌ No |
 | **Intracellular** | ICL1, ICL2, ICL3, C-terminus | Below membrane | ❌ No |
 
+### Other Membrane Protein Types
+
+The same principle applies to all membrane proteins:
+
+| Protein Type | Example Extracellular Regions |
+|--------------|------------------------------|
+| **Ion channels** | Pore loops, selectivity filter, outer vestibule |
+| **Transporters** | Substrate binding domains, periplasmic loops |
+| **Single-pass TM** | Entire ectodomain (N-terminal for type I) |
+| **Multi-pass TM** | Extracellular loops between TM helices |
+
 ### Why This Matters for Docking
 
-The GPCR ligand binding site is located in the cavity formed by the seven α-helices, accessible from the extracellular side. Larger ligands like peptides can also interact with extracellular loops (ECLs) and the N-terminal domain ([Wheatley et al., 2012](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC3372823/)).
+For GPCRs, the ligand binding site is located in the cavity formed by the seven α-helices, accessible from the extracellular side. Larger ligands like peptides can also interact with extracellular loops (ECLs) and the N-terminal domain ([Wheatley et al., 2012](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC3372823/)).
+
+The same logic applies to other membrane proteins - ligands can only access regions exposed to the extracellular space.
 
 **A valid docking pose should:**
 - Contact primarily extracellular regions
@@ -104,7 +141,7 @@ The validation process:
 
 ### Step 1: Structure Superposition
 
-ClusPro may dock against a receptor fragment (e.g., only extracellular regions). To check for membrane clashes, we superimpose the docked complex onto the full receptor using the Kabsch algorithm on conserved residues (typically ECL1).
+ClusPro may dock against a receptor fragment (e.g., only extracellular regions). To check for membrane clashes, we superimpose the docked complex onto the full receptor using the Kabsch algorithm on a conserved extracellular region (the first extracellular region by default, or a user-specified region).
 
 ### Step 2: Contact Calculation
 
@@ -327,9 +364,9 @@ for r in results:
 
 ## Worked Example
 
-### MRGX2_MOUSE Peptide Docking
+### GPCR Example: MRGX2_MOUSE Peptide Docking
 
-**Receptor:** MRGPRX2 (mouse), UniProt Q3UG50
+**Receptor:** MRGPRX2 (mouse), UniProt Q3UG50 - a GPCR
 
 MRGPRX2 is a mast cell receptor involved in pseudo-allergic reactions. Its structure has been resolved by cryo-EM ([PDB: 7VV6](https://www.rcsb.org/structure/7VV6)).
 
@@ -390,19 +427,19 @@ Summary:
 
 3. Kozakov D, Beglov D, Bohnuud T, et al. (2013). "How good is automated protein docking?" *Proteins* 81(12):2159-66. [PubMed](https://pubmed.ncbi.nlm.nih.gov/23996272/)
 
-### GPCR Peptide Docking
+### Membrane Protein Docking (GPCR examples)
 
 4. Ciemny M, Kurcinski M, Kamel K, et al. (2021). "Docking of peptides to GPCRs using a combination of CABS-dock with FlexPepDock refinement." *Brief Bioinform* 22(3):bbaa109. [PMC](https://pmc.ncbi.nlm.nih.gov/articles/PMC8138832/)
 
 5. Pándy-Szekeres G, Caroli J, Mamyrbekov A, et al. (2023). "Evaluating GPCR modeling and docking strategies in the era of deep learning-based protein structure prediction." *Comput Struct Biotechnol J* 21:757-769. [PMC](https://pmc.ncbi.nlm.nih.gov/articles/PMC9747351/)
 
-### GPCR Structure & Topology
+### Membrane Protein Structure & Topology
 
 6. Wheatley M, Wootten D, Conner MT, et al. (2012). "Lifting the lid on GPCRs: the role of extracellular loops." *Br J Pharmacol* 165(6):1688-1703. [PMC](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC3372823/)
 
 7. Weis WI, Kobilka BK (2018). "The Molecular Basis of G Protein-Coupled Receptor Activation." *Annu Rev Biochem* 87:897-919. [PMC](https://pmc.ncbi.nlm.nih.gov/articles/PMC6535338/)
 
-### MRGPRX2
+### MRGPRX2 (Worked Example)
 
 8. Cao C, et al. (2022). "Cryo-EM structure of MRGPRX2 complex with compound 48/80." [PDB: 7VV6](https://www.rcsb.org/structure/7VV6)
 
