@@ -1,0 +1,45 @@
+{
+  "name": "MRGX2_MOUSE",
+  "uniprot": "Q3UG50",
+  "description": "Mas-related G-protein coupled receptor member X2 (Mouse)",
+  "source": "UniProt topology annotations",
+  "extracellular": [
+    [1, 45],
+    [97, 107],
+    [177, 195],
+    [261, 275]
+  ],
+  "transmembrane": [
+    [46, 66],
+    [76, 96],
+    [108, 128],
+    [156, 176],
+    [196, 216],
+    [240, 260],
+    [276, 296]
+  ],
+  "intracellular": [
+    [67, 75],
+    [129, 155],
+    [217, 239],
+    [297, 352]
+  ],
+  "alignment_residues": [97, 107],
+  "regions": {
+    "N_terminus": [1, 45],
+    "TM1": [46, 66],
+    "ICL1": [67, 75],
+    "TM2": [76, 96],
+    "ECL1": [97, 107],
+    "TM3": [108, 128],
+    "ICL2": [129, 155],
+    "TM4": [156, 176],
+    "ECL2": [177, 195],
+    "TM5": [196, 216],
+    "ICL3": [217, 239],
+    "TM6": [240, 260],
+    "ECL3": [261, 275],
+    "TM7": [276, 296],
+    "C_terminus": [297, 352]
+  }
+}

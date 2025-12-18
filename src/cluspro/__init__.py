@@ -7,6 +7,7 @@ This package provides:
 - Results parsing
 - Download and extraction of docking results
 - File organization utilities
+- Docking validation (optional, requires biopython and scipy)
 - Authentication (guest or account login)
 
 Example usage:
@@ -19,9 +20,12 @@ Example usage:
     from cluspro import get_credentials, Credentials
     creds = get_credentials()  # From env vars or config
     submit_job("my-job", "receptor.pdb", "ligand.pdb", credentials=creds)
+
+    # Validation (requires: pip install cluspro-automation-py[validate])
+    from cluspro.validate import validate_docking, load_topology_from_json
 """
 
-__version__ = "0.2.0"
+__version__ = "0.3.0"
 __author__ = "E Wijaya"
 
 from cluspro.auth import (
@@ -74,3 +78,6 @@ __all__ = [
     "retry_download",
     "with_retry",
 ]
+
+# Optional: Validation module (requires biopython, scipy)
+# Import separately: from cluspro.validate import validate_docking, load_topology_from_json

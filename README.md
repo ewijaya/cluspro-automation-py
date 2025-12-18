@@ -11,6 +11,7 @@ Automates job submission, queue monitoring, results parsing, and file downloadin
 - **Results Parsing**: Parse completed jobs across multiple result pages
 - **Download**: Download PDB models and energy scores
 - **File Organization**: Organize results into meaningful directory structures
+- **Docking Validation**: Validate docking poses against receptor topology (GPCR extracellular/TM/IC regions)
 - **Job Persistence**: SQLite database for tracking jobs and resuming interrupted batches
 - **Retry Logic**: Automatic retry with exponential backoff for flaky operations
 - **Authentication**: Guest mode (default) or account login with multiple credential sources
@@ -171,6 +172,31 @@ cluspro list [-d DIRECTORY]
 job_name,peptide_name,receptor_name
 bb-1,hmgb1.144,mLrp1
 bb-2,hmgb1.144,hLrp1
+```
+
+### Validate Commands
+
+Validate docking poses against receptor topology (requires `pip install cluspro-automation-py[validate]`):
+
+```bash
+# Validate docking results
+cluspro validate -r receptor.pdb -d ./results -t topology.json
+
+# With output directory
+cluspro validate -r receptor.pdb -d ./results -t topology.json -o ./validation
+
+# Validate all models (not just min-clash per target)
+cluspro validate -r receptor.pdb -d ./results -t topology.json --all-models
+```
+
+**Topology JSON format** (see `examples/MRGX2_MOUSE_topology.json`):
+```json
+{
+  "extracellular": [[1, 45], [97, 107], [177, 195], [261, 275]],
+  "transmembrane": [[46, 66], [76, 96], [108, 128], [156, 176]],
+  "intracellular": [[67, 75], [129, 155], [217, 239], [297, 352]],
+  "alignment_residues": [97, 107]
+}
 ```
 
 ### Utility Commands
@@ -471,6 +497,37 @@ def my_download_operation():
 def my_custom_operation():
     """Custom retry logic."""
     pass
+```
+
+### Validate Module
+
+Validate docking poses against receptor topology (requires `pip install cluspro-automation-py[validate]`):
+
+```python
+from cluspro.validate import validate_docking, load_topology_from_json, Topology
+
+# Load topology from JSON
+topology = load_topology_from_json("examples/MRGX2_MOUSE_topology.json")
+
+# Or define programmatically
+topology = Topology(
+    extracellular=[(1, 45), (97, 107), (177, 195), (261, 275)],
+    transmembrane=[(46, 66), (76, 96), (108, 128), (156, 176)],
+    intracellular=[(67, 75), (129, 155), (217, 239), (297, 352)],
+    alignment_residues=(97, 107)
+)
+
+# Validate docking results (finds min-clash model per target)
+results = validate_docking(
+    receptor_pdb="receptor.pdb",
+    results_dir="./cluspro_results",
+    topology=topology,
+    output_dir="./validation"
+)
+
+# Access results
+for r in results:
+    print(f"{r.target}: {r.clashes} clashes, {r.ec_pct}% extracellular")
 ```
 
 ## Complete Workflow Example

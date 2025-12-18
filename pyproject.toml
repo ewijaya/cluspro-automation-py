@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "cluspro-automation-py"
-version = "0.2.0"
+version = "0.3.0"
 description = "Python automation tool for ClusPro protein docking web server"
 readme = "README.md"
 license = {text = "MIT"}
@@ -40,6 +40,10 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
+validate = [
+    "biopython>=1.80",
+    "scipy>=1.10.0",
+]
 dev = [
     "pytest>=7.0.0",
     "pytest-cov>=4.0.0",
@@ -50,6 +54,9 @@ dev = [
     "types-PyYAML>=6.0.0",
     "types-beautifulsoup4>=4.12.0",
     "types-requests>=2.31.0",
+]
+all = [
+    "cluspro-automation-py[validate,dev]",
 ]
 
 [project.scripts]

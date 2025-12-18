@@ -576,6 +576,112 @@ def config(ctx):
 
 
 # ============================================================================
+# Validate Commands
+# ============================================================================
+
+
+@main.command()
+@click.option("-r", "--receptor", required=True, type=click.Path(exists=True), help="Full receptor PDB file")
+@click.option("-d", "--results-dir", required=True, type=click.Path(exists=True), help="ClusPro results directory")
+@click.option("-t", "--topology", required=True, type=click.Path(exists=True), help="Topology JSON file")
+@click.option("-s", "--summary", type=click.Path(exists=True), help="Optional summary CSV (default: scan all)")
+@click.option("-o", "--output-dir", type=click.Path(), help="Output directory for results")
+@click.option("--contact-threshold", default=4.5, type=float, help="Contact distance threshold (Angstroms)")
+@click.option("--clash-threshold", default=2.0, type=float, help="Clash distance threshold (Angstroms)")
+@click.option("--all-models", is_flag=True, help="Validate all models (default: find min-clash per target)")
+@click.pass_context
+def validate(
+    ctx,
+    receptor: str,
+    results_dir: str,
+    topology: str,
+    summary: Optional[str],
+    output_dir: Optional[str],
+    contact_threshold: float,
+    clash_threshold: float,
+    all_models: bool,
+):
+    """
+    Validate ClusPro docking results against receptor topology.
+
+    Analyzes peptide contacts with extracellular, transmembrane, and intracellular
+    regions to identify biologically valid poses. Requires biopython and scipy.
+
+    \b
+    Install validation dependencies:
+      pip install cluspro-automation-py[validate]
+
+    \b
+    Example:
+      cluspro validate -r receptor.pdb -d ./results -t topology.json
+      cluspro validate -r receptor.pdb -d ./results -t topology.json -o ./validation
+    """
+    try:
+        from cluspro.validate import load_topology_from_json, validate_docking
+    except ImportError as e:
+        click.echo(
+            "Validation requires additional dependencies.\n"
+            "Install with: pip install cluspro-automation-py[validate]",
+            err=True,
+        )
+        click.echo(f"Error: {e}", err=True)
+        sys.exit(1)
+
+    try:
+        # Load topology
+        topo = load_topology_from_json(topology)
+        click.echo(f"Loaded topology: {len(topo.extracellular)} EC, {len(topo.transmembrane)} TM, {len(topo.intracellular)} IC regions")
+
+        # Run validation
+        results = validate_docking(
+            receptor_pdb=receptor,
+            results_dir=results_dir,
+            topology=topo,
+            summary_csv=summary,
+            output_dir=output_dir,
+            contact_threshold=contact_threshold,
+            clash_threshold=clash_threshold,
+            find_min_clash=not all_models,
+        )
+
+        if not results:
+            click.echo("No results found")
+            return
+
+        # Display summary
+        click.echo(f"\nValidated {len(results)} targets:")
+        click.echo("-" * 70)
+        click.echo(f"{'Rank':<6}{'Target':<20}{'Model':<18}{'Clashes':<10}{'EC%':<8}")
+        click.echo("-" * 70)
+
+        for i, r in enumerate(results[:20], 1):  # Show top 20
+            if r.error is None:
+                click.echo(f"{i:<6}{r.target:<20}{r.model:<18}{r.clashes:<10}{r.ec_pct:<8.1f}")
+
+        if len(results) > 20:
+            click.echo(f"... and {len(results) - 20} more")
+
+        # Statistics
+        valid_results = [r for r in results if r.error is None]
+        if valid_results:
+            avg_ec = sum(r.ec_pct for r in valid_results) / len(valid_results)
+            zero_clash = sum(1 for r in valid_results if r.clashes == 0)
+            high_ec = sum(1 for r in valid_results if r.ec_pct >= 90)
+
+            click.echo(f"\nSummary:")
+            click.echo(f"  Average EC%: {avg_ec:.1f}%")
+            click.echo(f"  Zero clashes: {zero_clash}/{len(valid_results)}")
+            click.echo(f"  EC% >= 90%: {high_ec}/{len(valid_results)}")
+
+        if output_dir:
+            click.echo(f"\nResults written to: {output_dir}/docking_validation.csv")
+
+    except Exception as e:
+        click.echo(f"Error: {e}", err=True)
+        sys.exit(1)
+
+
+# ============================================================================
 # Jobs Commands (Database Operations)
 # ============================================================================
 
