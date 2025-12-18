@@ -28,6 +28,13 @@ class SubmissionError(Exception):
     pass
 
 
+def _scroll_and_click(driver, element) -> None:
+    """Scroll element into view and click it."""
+    driver.execute_script("arguments[0].scrollIntoView({block: 'center'});", element)
+    time.sleep(0.3)
+    element.click()
+
+
 @retry_browser
 def _fill_and_submit_form(
     driver,
@@ -41,6 +48,7 @@ def _fill_and_submit_form(
     Fill and submit the ClusPro job form.
 
     This helper is wrapped with retry to handle transient Selenium failures.
+    Handles both guest and logged-in user forms.
     """
     # Fill job name
     job_name_input = wait.until(
@@ -57,7 +65,7 @@ def _fill_and_submit_form(
 
     # Upload receptor PDB
     show_rec_button = driver.find_element(By.ID, "showrecfile")
-    show_rec_button.click()
+    _scroll_and_click(driver, show_rec_button)
     time.sleep(0.5)
 
     receptor_input = driver.find_element(By.ID, "rec")
@@ -66,22 +74,26 @@ def _fill_and_submit_form(
 
     # Upload ligand PDB
     show_lig_button = driver.find_element(By.ID, "showligfile")
-    show_lig_button.click()
+    _scroll_and_click(driver, show_lig_button)
     time.sleep(0.5)
 
     ligand_input = driver.find_element(By.ID, "lig")
     ligand_input.send_keys(str(ligand_path))
     logger.debug("Uploaded ligand PDB")
 
-    # Check non-commercial agreement
-    agree_checkbox = driver.find_element(By.NAME, "noncommercial")
-    if not agree_checkbox.is_selected():
-        agree_checkbox.click()
-    logger.debug("Checked non-commercial agreement")
+    # Check non-commercial agreement (only present for guest users)
+    try:
+        agree_checkbox = driver.find_element(By.NAME, "noncommercial")
+        if not agree_checkbox.is_selected():
+            _scroll_and_click(driver, agree_checkbox)
+        logger.debug("Checked non-commercial agreement")
+    except Exception:
+        # Logged-in users don't have this checkbox
+        logger.debug("No non-commercial checkbox (logged-in user)")
 
     # Submit job
     submit_button = driver.find_element(By.NAME, "action")
-    submit_button.click()
+    _scroll_and_click(driver, submit_button)
     logger.debug("Clicked submit button")
 
 
