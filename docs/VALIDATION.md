@@ -167,10 +167,15 @@ This threshold captures van der Waals interactions (3.3-4.0 Å) and hydrogen bon
 Clashes indicate steric overlap - atoms that would physically collide:
 
 ```
-Clash: Any atom pair with distance < 2.0 Å
+Clash: Any peptide-receptor atom pair with distance < 2.0 Å
 ```
 
-High clash counts suggest the pose is geometrically impossible.
+**Counting method:** Clashes are counted at the **atom level**, not residue level:
+- For each peptide atom, find all receptor atoms within 2.0 Å
+- Each atom pair counts as 1 clash
+- Example: If peptide atom A overlaps with receptor atoms X, Y, Z → 3 clashes
+
+This means a single clashing residue with multiple overlapping atoms can contribute many clashes. High clash counts (>50) strongly suggest the pose is geometrically impossible.
 
 ### Step 4: Region Classification
 
