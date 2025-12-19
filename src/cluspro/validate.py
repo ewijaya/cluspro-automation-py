@@ -482,23 +482,29 @@ class DockingValidator:
 
 
 def get_cluspro_scores(target_dir: str) -> tuple:
-    """Read ClusPro scores from balanced CSV file.
+    """Read ClusPro scores from CSV file.
+
+    Supports all ClusPro scoring functions:
+    - cluspro_scores.{job_id}.000.balanced.csv
+    - cluspro_scores.{job_id}.002.Electrostatic_favored.csv
+    - cluspro_scores.{job_id}.004.Hydrophobic_favored.csv
+    - cluspro_scores.{job_id}.006.Van_der_Waals_plus_Electrostatics.csv
 
     Returns:
         Tuple of (scores_dict, coefficient_str) where coefficient is e.g. "000"
     """
     scores = {}
     coefficient = None
-    score_files = list(Path(target_dir).glob("cluspro_scores.*.balanced.csv"))
+    score_files = list(Path(target_dir).glob("cluspro_scores.*.csv"))
 
     if not score_files:
         return scores, coefficient
 
-    # Extract coefficient from filename: cluspro_scores.{job_id}.{coefficient}.balanced.csv
+    # Extract coefficient from filename: cluspro_scores.{job_id}.{coefficient}.{name}.csv
     csv_name = score_files[0].name
     parts = csv_name.replace(".csv", "").split(".")
     if len(parts) >= 3:
-        coefficient = parts[2]  # e.g., "000"
+        coefficient = parts[2]  # e.g., "000", "002", "004", "006"
 
     with open(score_files[0], "r") as f:
         reader = csv.DictReader(f)
