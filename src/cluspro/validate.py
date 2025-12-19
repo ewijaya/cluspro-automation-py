@@ -657,7 +657,7 @@ def _write_results(results: list, topology: Topology, output_dir: str):
         f.write("#   ic_contacts: Intracellular contacts\n")
         f.write("#   ec_pct: Percentage extracellular contacts\n")
         f.write("#   validity_score: Composite score (0-100), higher = more valid\n")
-        f.write("#                   Formula: ec_pct - (clashes*5) - (tm*2) - (ic*3)\n")
+        f.write("#                   Formula: ec_pct - clashes\n")
         f.write("#\n")
         f.write("# =============================================================================\n")
 
