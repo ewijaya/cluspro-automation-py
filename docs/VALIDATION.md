@@ -371,27 +371,26 @@ Source: [Kozakov et al., Nature Protocols 2017](https://pmc.ncbi.nlm.nih.gov/art
 
 ### Validity Score
 
-The validity score is a composite metric combining multiple factors:
+The validity score is a simple metric combining EC% and clashes:
 
 ```
-validity_score = ec_pct - (clashes × 5) - (tm_contacts × 2) - (ic_contacts × 3)
+validity_score = ec_pct - clashes
 ```
 
 The score is clamped to the range 0-100.
+
+**Rationale:** TM/IC contacts are already reflected in lower ec_pct, so we don't
+double-penalize them. Only clashes get an additional penalty since they represent
+physically impossible steric collisions.
 
 **Score interpretation:**
 
 | Score | Interpretation |
 |-------|----------------|
-| **80-100** | Excellent - high confidence valid pose |
+| **80-100** | Excellent - high EC%, few clashes |
 | **50-79** | Moderate - review manually |
-| **20-49** | Poor - likely has issues |
-| **0-19** | Invalid - significant problems (clashes, TM/IC contacts) |
-
-**Penalty weights rationale:**
-- **Clashes (×5)**: Severe penalty - steric collisions are physically impossible
-- **IC contacts (×3)**: High penalty - intracellular contacts are biologically impossible
-- **TM contacts (×2)**: Moderate penalty - some TM contact at boundaries is acceptable
+| **20-49** | Poor - low EC% or many clashes |
+| **0-19** | Invalid - significant problems |
 
 ### Best Practices
 
