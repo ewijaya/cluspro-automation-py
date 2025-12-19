@@ -130,14 +130,21 @@ The same logic applies to other membrane proteins - ligands can only access regi
 
 ### Overview
 
-The validation process:
+The validation process for each peptide target:
 
-1. **Load the full receptor structure** with all regions (not just the docking fragment)
-2. **Superimpose docked complexes** onto the full receptor
-3. **Calculate contacts** between peptide and receptor atoms
-4. **Classify contacts** by region type (EC/TM/IC)
-5. **Detect clashes** (atoms too close together)
-6. **Rank poses** by biological validity
+1. **Find ClusPro score CSV** (e.g., `cluspro_scores.1375818.000.balanced.csv`)
+2. **Extract coefficient** from CSV filename (e.g., `000` for balanced)
+3. **Process only matching PDBs** (e.g., `model.000.*.pdb` files)
+4. **For each PDB model:**
+   - Load and superimpose onto full receptor
+   - Calculate contacts and clashes
+   - Classify contacts by region (EC/TM/IC)
+5. **Select best model** by **minimum clashes** (not energy or validity score)
+6. **Extract cluster number** from filename (e.g., `model.000.21.pdb` → cluster 21)
+7. **Lookup energy** in CSV: find cluster 21 where `Representative == "Center"` → get `Weighted Score`
+8. **Calculate validity_score**: `ec_pct - clashes`
+
+**Important:** Model selection is based on **minimum clashes**, not validity score or energy. The validity score is calculated after selection for display purposes.
 
 ### Step 1: Structure Superposition
 
@@ -178,9 +185,28 @@ elif residue in intracellular_ranges:
     region = "intracellular"
 ```
 
-### Step 5: Model Selection
+### Step 5: Model Selection and Energy Lookup
 
-For each target, the model with **minimum clashes** is selected. Among models with equal clashes, higher extracellular contact percentage is preferred.
+For each target:
+
+1. **PDB file filtering**: Only process files matching the CSV coefficient
+   - CSV: `cluspro_scores.*.000.balanced.csv` → process `model.000.*.pdb`
+   - CSV: `cluspro_scores.*.006.Van_der_Waals_plus_Electrostatics.csv` → process `model.006.*.pdb`
+
+2. **Selection criterion**: The model with **minimum clashes** is selected
+   - This prioritizes geometrically valid poses over energy
+
+3. **Cluster extraction**: Parse from filename
+   - `model.000.21.pdb` → cluster number `21`
+
+4. **Energy lookup**: Find the cluster's Center score in the CSV
+   ```
+   Cluster,Members,Representative,Weighted Score
+   21,45,Center,-606.4    ← This value becomes center_score
+   21,45,Lowest Energy,-650.2
+   ```
+
+5. **Validity score**: Calculated as `ec_pct - clashes` (clamped 0-100)
 
 ## Getting Topology Data
 
