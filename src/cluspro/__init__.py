@@ -25,7 +25,7 @@ Example usage:
     from cluspro.validate import validate_docking, load_topology_from_json
 """
 
-__version__ = "0.3.0"
+__version__ = "0.4.0"
 __author__ = "E Wijaya"
 
 from cluspro.auth import (
