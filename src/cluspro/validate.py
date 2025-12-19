@@ -481,13 +481,24 @@ class DockingValidator:
             )
 
 
-def get_cluspro_scores(target_dir: str) -> dict:
-    """Read ClusPro scores from balanced CSV file."""
+def get_cluspro_scores(target_dir: str) -> tuple:
+    """Read ClusPro scores from balanced CSV file.
+
+    Returns:
+        Tuple of (scores_dict, coefficient_str) where coefficient is e.g. "000"
+    """
     scores = {}
+    coefficient = None
     score_files = list(Path(target_dir).glob("cluspro_scores.*.balanced.csv"))
 
     if not score_files:
-        return scores
+        return scores, coefficient
+
+    # Extract coefficient from filename: cluspro_scores.{job_id}.{coefficient}.balanced.csv
+    csv_name = score_files[0].name
+    parts = csv_name.replace(".csv", "").split(".")
+    if len(parts) >= 3:
+        coefficient = parts[2]  # e.g., "000"
 
     with open(score_files[0], "r") as f:
         reader = csv.DictReader(f)
@@ -497,7 +508,7 @@ def get_cluspro_scores(target_dir: str) -> dict:
                 center_score = float(row["Weighted Score"])
                 scores[cluster] = center_score
 
-    return scores
+    return scores, coefficient
 
 
 def validate_docking(
@@ -546,12 +557,19 @@ def validate_docking(
             logger.warning(f"Target directory not found: {target_dir}")
             continue
 
-        model_files = sorted(target_dir.glob("model.*.pdb"))
+        cluspro_scores, coefficient = get_cluspro_scores(str(target_dir))
+
+        # Only process PDB files matching the coefficient from the CSV
+        # e.g., if CSV is cluspro_scores.*.000.balanced.csv, only use model.000.*.pdb
+        if coefficient:
+            model_files = sorted(target_dir.glob(f"model.{coefficient}.*.pdb"))
+        else:
+            # Fallback to balanced (000) if no CSV found
+            model_files = sorted(target_dir.glob("model.000.*.pdb"))
+
         if not model_files:
             logger.warning(f"No model files found in {target_dir}")
             continue
-
-        cluspro_scores = get_cluspro_scores(str(target_dir))
 
         logger.info(f"[{i+1}/{len(targets)}] Validating {target}: {len(model_files)} models")
 
