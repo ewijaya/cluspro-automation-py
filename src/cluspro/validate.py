@@ -89,8 +89,29 @@ class ValidationResult:
     tm_contacts: int
     ic_contacts: int
     ec_pct: float
+    validity_score: float = 0.0
     alignment_rmsd: Optional[float] = None
     error: Optional[str] = None
+
+
+def calculate_validity_score(ec_pct: float, clashes: int, tm_contacts: int, ic_contacts: int) -> float:
+    """
+    Calculate composite validity score (0-100).
+
+    Higher score = more valid (more EC contacts, fewer clashes/TM/IC contacts)
+
+    Formula:
+        score = ec_pct - (clashes * 5) - (tm_contacts * 2) - (ic_contacts * 3)
+        clamped to 0-100
+    """
+    clash_penalty = clashes * 5
+    tm_penalty = tm_contacts * 2
+    ic_penalty = ic_contacts * 3
+
+    score = ec_pct - clash_penalty - tm_penalty - ic_penalty
+
+    # Clamp to 0-100
+    return max(0.0, min(100.0, round(score, 1)))
 
 
 def load_topology_from_json(json_path: str) -> Topology:
@@ -315,8 +336,10 @@ class DockingValidator:
         receptor_atoms = []
         peptide_atoms = []
 
-        # Receptor fragment residue ranges (from topology extracellular regions)
-        receptor_ranges = self.topology.extracellular
+        # Receptor fragment residue ranges (ECL regions only, exclude N-terminus)
+        # N-terminus is typically residues < 50, ECL regions start at higher numbers
+        # This prevents misclassifying peptide residues as receptor
+        receptor_ranges = [(s, e) for s, e in self.topology.extracellular if s > 50]
 
         for model in structure:
             for chain in model:
@@ -366,12 +389,13 @@ class DockingValidator:
         model_name = Path(pdb_path).name
         target = Path(pdb_path).parent.name
 
-        # Extract cluster from filename (model.006.13.pdb -> cluster 6)
+        # Extract cluster from filename (model.006.13.pdb -> cluster 13)
+        # ClusPro naming: model.{coefficient}.{cluster}.pdb
         cluster = None
         parts = model_name.replace(".pdb", "").split(".")
-        if len(parts) >= 2:
+        if len(parts) >= 3:  # Need 3 parts: model, coefficient, cluster
             try:
-                cluster = int(parts[1])
+                cluster = int(parts[2])  # Third part is cluster
             except ValueError:
                 pass
 
@@ -424,6 +448,9 @@ class DockingValidator:
             total = ec_contacts + tm_contacts + ic_contacts
             ec_pct = (ec_contacts / total * 100) if total > 0 else 0
 
+            # Calculate validity score
+            validity = calculate_validity_score(ec_pct, clashes, tm_contacts, ic_contacts)
+
             return ValidationResult(
                 target=target,
                 model=model_name,
@@ -434,6 +461,7 @@ class DockingValidator:
                 tm_contacts=tm_contacts,
                 ic_contacts=ic_contacts,
                 ec_pct=round(ec_pct, 1),
+                validity_score=validity,
                 alignment_rmsd=round(rmsd, 2) if rmsd else None,
             )
 
@@ -476,7 +504,6 @@ def validate_docking(
     receptor_pdb: str,
     results_dir: str,
     topology: Topology,
-    summary_csv: Optional[str] = None,
     output_dir: Optional[str] = None,
     contact_threshold: float = DEFAULT_CONTACT_THRESHOLD,
     clash_threshold: float = DEFAULT_CLASH_THRESHOLD,
@@ -489,7 +516,6 @@ def validate_docking(
         receptor_pdb: Path to full receptor PDB file
         results_dir: Directory containing ClusPro result folders
         topology: Receptor topology definition
-        summary_csv: Optional CSV listing targets (default: scan all directories)
         output_dir: Optional output directory for results
         contact_threshold: Distance threshold for contacts (Angstroms)
         clash_threshold: Distance threshold for clashes (Angstroms)
@@ -507,18 +533,10 @@ def validate_docking(
 
     results_path = Path(results_dir)
 
-    # Get targets
-    if summary_csv:
-        with open(summary_csv, "r") as f:
-            # Skip comment lines
-            lines = [line for line in f if not line.startswith("#")]
-        reader = csv.DictReader(lines)
-        targets = [row["target"] for row in reader]
-    else:
-        # Scan all directories
-        targets = [
-            d.name for d in results_path.iterdir() if d.is_dir() and not d.name.startswith(".")
-        ]
+    # Scan all directories for targets
+    targets = [
+        d.name for d in results_path.iterdir() if d.is_dir() and not d.name.startswith(".")
+    ]
 
     results = []
 
@@ -613,6 +631,8 @@ def _write_results(results: list, topology: Topology, output_dir: str):
         f.write("#   tm_contacts: Transmembrane contacts\n")
         f.write("#   ic_contacts: Intracellular contacts\n")
         f.write("#   ec_pct: Percentage extracellular contacts\n")
+        f.write("#   validity_score: Composite score (0-100), higher = more valid\n")
+        f.write("#                   Formula: ec_pct - (clashes*5) - (tm*2) - (ic*3)\n")
         f.write("#\n")
         f.write("# =============================================================================\n")
 
@@ -620,7 +640,7 @@ def _write_results(results: list, topology: Topology, output_dir: str):
         writer = csv.writer(f)
         writer.writerow([
             "rank", "target", "model", "cluster", "center_score",
-            "clashes", "ec_contacts", "tm_contacts", "ic_contacts", "ec_pct"
+            "clashes", "ec_contacts", "tm_contacts", "ic_contacts", "ec_pct", "validity_score"
         ])
 
         for i, r in enumerate(results, 1):
@@ -628,7 +648,7 @@ def _write_results(results: list, topology: Topology, output_dir: str):
                 writer.writerow([
                     i, r.target, r.model, r.cluster or "N/A",
                     r.center_score or "N/A", r.clashes,
-                    r.ec_contacts, r.tm_contacts, r.ic_contacts, r.ec_pct
+                    r.ec_contacts, r.tm_contacts, r.ic_contacts, r.ec_pct, r.validity_score
                 ])
 
     logger.info(f"Results written to: {csv_path}")

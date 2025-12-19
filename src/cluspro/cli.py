@@ -585,7 +585,6 @@ def config(ctx):
 @click.option("-d", "--results-dir", required=True, type=click.Path(exists=True), help="ClusPro results directory")
 @click.option("-t", "--topology", type=click.Path(exists=True), help="Topology JSON file")
 @click.option("-u", "--uniprot", help="UniProt accession ID (e.g., Q3UG50) - fetches topology from UniProt API")
-@click.option("-s", "--summary", type=click.Path(exists=True), help="Optional summary CSV (default: scan all)")
 @click.option("-o", "--output-dir", type=click.Path(), help="Output directory for results")
 @click.option("--contact-threshold", default=4.5, type=float, help="Contact distance threshold (Angstroms)")
 @click.option("--clash-threshold", default=2.0, type=float, help="Clash distance threshold (Angstroms)")
@@ -597,7 +596,6 @@ def validate(
     results_dir: str,
     topology: Optional[str],
     uniprot: Optional[str],
-    summary: Optional[str],
     output_dir: Optional[str],
     contact_threshold: float,
     clash_threshold: float,
@@ -650,7 +648,6 @@ def validate(
             receptor_pdb=receptor,
             results_dir=results_dir,
             topology=topo,
-            summary_csv=summary,
             output_dir=output_dir,
             contact_threshold=contact_threshold,
             clash_threshold=clash_threshold,
@@ -663,13 +660,13 @@ def validate(
 
         # Display summary
         click.echo(f"\nValidated {len(results)} targets:")
-        click.echo("-" * 70)
-        click.echo(f"{'Rank':<6}{'Target':<20}{'Model':<18}{'Clashes':<10}{'EC%':<8}")
-        click.echo("-" * 70)
+        click.echo("-" * 80)
+        click.echo(f"{'Rank':<6}{'Target':<20}{'Model':<18}{'Clashes':<10}{'EC%':<8}{'Score':<8}")
+        click.echo("-" * 80)
 
         for i, r in enumerate(results[:20], 1):  # Show top 20
             if r.error is None:
-                click.echo(f"{i:<6}{r.target:<20}{r.model:<18}{r.clashes:<10}{r.ec_pct:<8.1f}")
+                click.echo(f"{i:<6}{r.target:<20}{r.model:<18}{r.clashes:<10}{r.ec_pct:<8.1f}{r.validity_score:<8.1f}")
 
         if len(results) > 20:
             click.echo(f"... and {len(results) - 20} more")
