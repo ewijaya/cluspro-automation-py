@@ -98,17 +98,18 @@ def calculate_validity_score(ec_pct: float, clashes: int, tm_contacts: int, ic_c
     """
     Calculate composite validity score (0-100).
 
-    Higher score = more valid (more EC contacts, fewer clashes/TM/IC contacts)
+    Higher score = more valid (more EC contacts, fewer clashes)
 
     Formula:
-        score = ec_pct - (clashes * 5) - (tm_contacts * 2) - (ic_contacts * 3)
+        score = ec_pct - clashes
         clamped to 0-100
-    """
-    clash_penalty = clashes * 5
-    tm_penalty = tm_contacts * 2
-    ic_penalty = ic_contacts * 3
 
-    score = ec_pct - clash_penalty - tm_penalty - ic_penalty
+    Note: TM/IC contacts are already reflected in lower ec_pct, so we don't
+    double-penalize them. Only clashes get an additional penalty.
+    """
+    clash_penalty = clashes
+
+    score = ec_pct - clash_penalty
 
     # Clamp to 0-100
     return max(0.0, min(100.0, round(score, 1)))
