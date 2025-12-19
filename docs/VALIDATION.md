@@ -143,6 +143,8 @@ The validation process:
 
 ClusPro may dock against a receptor fragment (e.g., only extracellular regions). To check for membrane clashes, we superimpose the docked complex onto the full receptor using the Kabsch algorithm on a conserved extracellular region (the first extracellular region by default, or a user-specified region).
 
+**Receptor fragment detection:** When parsing docked complexes, only extracellular loop (ECL) regions with residue numbers > 50 are used to identify receptor atoms. This excludes the N-terminus to prevent misclassifying peptide residues (which typically start at residue 1) as receptor atoms.
+
 ### Step 2: Contact Calculation
 
 Contacts are identified using a **KD-tree spatial query** with a 4.5 Å distance threshold:
@@ -310,7 +312,7 @@ results = validate_docking(
 
 # Access results
 for r in results:
-    print(f"{r.target}: {r.clashes} clashes, {r.ec_pct}% extracellular")
+    print(f"{r.target}: {r.clashes} clashes, {r.ec_pct}% EC, score={r.validity_score}")
 ```
 
 ### Output Columns
@@ -319,14 +321,23 @@ for r in results:
 |--------|-------------|
 | `rank` | Ranking by minimum clashes (1 = best) |
 | `target` | Peptide/ligand identifier |
-| `model` | ClusPro model filename |
-| `cluster` | ClusPro cluster number |
+| `model` | ClusPro model filename (format: `model.{coefficient}.{cluster}.pdb`) |
+| `cluster` | ClusPro cluster number (extracted from filename) |
 | `center_score` | ClusPro weighted score (kcal/mol) |
 | `clashes` | Number of atom pairs < 2.0 Å |
 | `ec_contacts` | Contacts with extracellular regions |
 | `tm_contacts` | Contacts with transmembrane regions |
 | `ic_contacts` | Contacts with intracellular regions |
 | `ec_pct` | Percentage of contacts that are extracellular |
+| `validity_score` | Composite validity score (0-100), higher = more valid |
+
+**ClusPro Model Naming Convention:**
+
+The model filename encodes both the scoring function (coefficient) and cluster number:
+- `model.000.XX.pdb` - Balanced scoring, cluster XX
+- `model.002.XX.pdb` - Electrostatic-favored, cluster XX
+- `model.004.XX.pdb` - Hydrophobic-favored, cluster XX
+- `model.006.XX.pdb` - Van der Waals + Electrostatics, cluster XX
 
 ## Interpreting Results
 
@@ -338,6 +349,7 @@ for r in results:
 | `ec_pct` | 90-100% | Contacts primarily extracellular |
 | `tm_contacts` | 0 or low | Minimal membrane penetration |
 | `ic_contacts` | 0 | No intracellular contacts |
+| `validity_score` | > 80 | High biological validity |
 
 ### Warning Signs
 
@@ -354,6 +366,30 @@ for r in results:
 - **90-99%**: Minor TM contacts, likely from loop boundaries - acceptable
 - **70-89%**: Significant TM contacts - review carefully
 - **< 70%**: Majority non-extracellular contacts - likely invalid
+
+### Validity Score
+
+The validity score is a composite metric combining multiple factors:
+
+```
+validity_score = ec_pct - (clashes × 5) - (tm_contacts × 2) - (ic_contacts × 3)
+```
+
+The score is clamped to the range 0-100.
+
+**Score interpretation:**
+
+| Score | Interpretation |
+|-------|----------------|
+| **80-100** | Excellent - high confidence valid pose |
+| **50-79** | Moderate - review manually |
+| **20-49** | Poor - likely has issues |
+| **0-19** | Invalid - significant problems (clashes, TM/IC contacts) |
+
+**Penalty weights rationale:**
+- **Clashes (×5)**: Severe penalty - steric collisions are physically impossible
+- **IC contacts (×3)**: High penalty - intracellular contacts are biologically impossible
+- **TM contacts (×2)**: Moderate penalty - some TM contact at boundaries is acceptable
 
 ### Best Practices
 
@@ -387,27 +423,28 @@ Fetching topology from UniProt: Q3UG50
 Loaded topology: 4 EC, 7 TM, 4 IC regions
 
 Validated 33 targets:
-----------------------------------------------------------------------
-Rank  Target              Model              Clashes   EC%
-----------------------------------------------------------------------
-1     1r10_MF21_20        model.002.00.pdb   0         97.4
-2     SR-5_1-110          model.006.13.pdb   0         100.0
-3     NPM_208             model.000.21.pdb   1         75.5
-4     RF0012              model.004.03.pdb   1         98.0
-5     test_20aa           model.006.03.pdb   1         100.0
+--------------------------------------------------------------------------------
+Rank  Target              Model              Clashes   EC%     Score
+--------------------------------------------------------------------------------
+1     1r10_MF21_20        model.002.00.pdb   0         97.4    89.4
+2     SR-5_1-110          model.006.13.pdb   0         100.0   100.0
+3     NPM_208             model.000.21.pdb   1         75.5    0.0
+4     RF0012              model.004.03.pdb   1         98.0    81.0
+5     test_20aa           model.006.03.pdb   1         100.0   95.0
 ...
 
 Summary:
-  Average EC%: 89.7%
+  Average EC%: 90.4%
   Zero clashes: 2/33
   EC% >= 90%: 21/33
 ```
 
 **Interpretation:**
 
-- **Top 2 poses (1r10_MF21_20, SR-5_1-110)** have zero clashes and high EC% - excellent candidates
+- **Top 2 poses (1r10_MF21_20, SR-5_1-110)** have zero clashes and high validity scores (89.4, 100.0) - excellent candidates
+- **SR-5_1-110** achieved a perfect validity score of 100 (100% EC, 0 clashes)
 - **Most peptides (21/33)** achieved ≥90% extracellular contacts
-- **Cluster 6** dominated the best models - consider this cluster for further analysis
+- **Coefficient 006 (VdW+Elec)** dominated the best models - this scoring function may work better for peptide docking
 
 ## Tips
 
