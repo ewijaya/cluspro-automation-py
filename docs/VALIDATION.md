@@ -339,6 +339,8 @@ The model filename encodes both the scoring function (coefficient) and cluster n
 - `model.004.XX.pdb` - Hydrophobic-favored, cluster XX
 - `model.006.XX.pdb` - Van der Waals + Electrostatics, cluster XX
 
+Source: [Kozakov et al., Nature Protocols 2017](https://pmc.ncbi.nlm.nih.gov/articles/PMC5540229/)
+
 ## Interpreting Results
 
 ### Good Pose Indicators
