@@ -7,7 +7,7 @@ Includes configuration loading, sequence compression, and file path helpers.
 import logging
 import os
 from pathlib import Path
-from typing import Optional, Union
+from typing import Any, Union, cast
 
 import yaml
 
@@ -20,7 +20,7 @@ CONFIG_LOCATIONS = [
 ]
 
 
-def load_config(config_path: Optional[Union[str, Path]] = None) -> dict:
+def load_config(config_path: str | Path | None = None) -> dict[str, Any]:
     """
     Load configuration from YAML file.
 
@@ -49,13 +49,13 @@ def load_config(config_path: Optional[Union[str, Path]] = None) -> dict:
         if path.exists():
             logger.debug(f"Loading config from: {path}")
             with open(path) as f:
-                return yaml.safe_load(f)
+                return cast(dict[str, Any], yaml.safe_load(f))
 
     logger.warning("No config file found, using defaults")
     return get_default_config()
 
 
-def get_default_config() -> dict:
+def get_default_config() -> dict[str, Any]:
     """Return default configuration values."""
     return {
         "credentials": {
@@ -115,7 +115,7 @@ def expand_sequences(s: str) -> list[int]:
     if not s or not s.strip():
         return []
 
-    result = []
+    result: list[int] = []
     parts = s.strip().split(",")
 
     for part in parts:
@@ -252,7 +252,7 @@ def ensure_dir(path: Union[str, Path]) -> Path:
     return dir_path
 
 
-def setup_logging(level: str = "INFO", log_file: Optional[str] = None) -> None:
+def setup_logging(level: str = "INFO", log_file: str | None = None) -> None:
     """
     Configure logging for the package.
 
@@ -266,7 +266,7 @@ def setup_logging(level: str = "INFO", log_file: Optional[str] = None) -> None:
     log_format = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
     log_level = getattr(logging, level.upper(), logging.INFO)
 
-    handlers = [logging.StreamHandler()]
+    handlers: list[logging.Handler] = [logging.StreamHandler()]
 
     if log_file:
         log_path = resolve_path(log_file)

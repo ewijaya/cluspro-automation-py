@@ -12,7 +12,7 @@ from dataclasses import dataclass
 from datetime import datetime
 from enum import Enum
 from pathlib import Path
-from typing import Iterator, List, Optional, Union
+from typing import Iterator
 
 from cluspro.utils import resolve_path
 
@@ -38,17 +38,17 @@ class JobStatus(str, Enum):
 class Job:
     """Job record dataclass."""
 
-    id: Optional[int]
+    id: int | None
     job_name: str
-    cluspro_job_id: Optional[int]
+    cluspro_job_id: int | None
     status: JobStatus
     receptor_pdb: str
     ligand_pdb: str
     server: str
-    submitted_at: Optional[datetime]
-    completed_at: Optional[datetime]
-    error_message: Optional[str]
-    batch_id: Optional[str]
+    submitted_at: datetime | None
+    completed_at: datetime | None
+    error_message: str | None
+    batch_id: str | None
 
     def to_dict(self) -> dict:
         """Convert to dictionary."""
@@ -81,7 +81,7 @@ class JobDatabase:
         >>> pending = db.get_pending_jobs()
     """
 
-    def __init__(self, db_path: Optional[Union[str, Path]] = None):
+    def __init__(self, db_path: str | Path | None = None):
         """
         Initialize database connection.
 
@@ -153,7 +153,7 @@ class JobDatabase:
         receptor_pdb: str,
         ligand_pdb: str,
         server: str = "gpu",
-        batch_id: Optional[str] = None,
+        batch_id: str | None = None,
     ) -> Job:
         """
         Create a new job record.
@@ -177,25 +177,28 @@ class JobDatabase:
                 (job_name, receptor_pdb, ligand_pdb, server, batch_id),
             )
             job_id = cursor.lastrowid
+            assert job_id is not None, "Failed to get lastrowid after INSERT"
 
         logger.debug(f"Created job record: {job_name} (id={job_id})")
-        return self.get_job(job_id)
+        job = self.get_job(job_id)
+        assert job is not None, f"Failed to retrieve job after creation: {job_id}"
+        return job
 
-    def get_job(self, job_id: int) -> Optional[Job]:
+    def get_job(self, job_id: int) -> Job | None:
         """Get job by ID."""
         with self._connection() as conn:
             row = conn.execute("SELECT * FROM jobs WHERE id = ?", (job_id,)).fetchone()
 
         return self._row_to_job(row) if row else None
 
-    def get_job_by_name(self, job_name: str) -> Optional[Job]:
+    def get_job_by_name(self, job_name: str) -> Job | None:
         """Get job by name."""
         with self._connection() as conn:
             row = conn.execute("SELECT * FROM jobs WHERE job_name = ?", (job_name,)).fetchone()
 
         return self._row_to_job(row) if row else None
 
-    def get_job_by_cluspro_id(self, cluspro_job_id: int) -> Optional[Job]:
+    def get_job_by_cluspro_id(self, cluspro_job_id: int) -> Job | None:
         """Get job by ClusPro job ID."""
         with self._connection() as conn:
             row = conn.execute(
@@ -208,8 +211,8 @@ class JobDatabase:
         self,
         job_id: int,
         status: JobStatus,
-        cluspro_job_id: Optional[int] = None,
-        error_message: Optional[str] = None,
+        cluspro_job_id: int | None = None,
+        error_message: str | None = None,
     ) -> None:
         """
         Update job status.
@@ -251,7 +254,7 @@ class JobDatabase:
 
         logger.debug(f"Updated job {job_id} status to: {status.value}")
 
-    def get_pending_jobs(self, batch_id: Optional[str] = None) -> List[Job]:
+    def get_pending_jobs(self, batch_id: str | None = None) -> list[Job]:
         """Get all pending jobs, optionally filtered by batch."""
         with self._connection() as conn:
             if batch_id:
@@ -264,7 +267,7 @@ class JobDatabase:
 
         return [self._row_to_job(row) for row in rows]
 
-    def get_failed_jobs(self, batch_id: Optional[str] = None) -> List[Job]:
+    def get_failed_jobs(self, batch_id: str | None = None) -> list[Job]:
         """Get all failed jobs for retry."""
         with self._connection() as conn:
             if batch_id:
@@ -277,7 +280,7 @@ class JobDatabase:
 
         return [self._row_to_job(row) for row in rows]
 
-    def get_jobs_by_batch(self, batch_id: str) -> List[Job]:
+    def get_jobs_by_batch(self, batch_id: str) -> list[Job]:
         """Get all jobs in a batch."""
         with self._connection() as conn:
             rows = conn.execute(
@@ -289,9 +292,9 @@ class JobDatabase:
 
     def get_all_jobs(
         self,
-        status: Optional[JobStatus] = None,
+        status: JobStatus | None = None,
         limit: int = 100,
-    ) -> List[Job]:
+    ) -> list[Job]:
         """Get all jobs with optional status filter."""
         with self._connection() as conn:
             if status:

@@ -20,6 +20,8 @@ Example usage:
     topology = fetch_topology_from_uniprot("Q3UG50")
 """
 
+from __future__ import annotations
+
 import csv
 import json
 import logging
@@ -27,7 +29,6 @@ import urllib.request
 import urllib.error
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Optional
 
 import numpy as np
 
@@ -82,16 +83,16 @@ class ValidationResult:
 
     target: str
     model: str
-    cluster: Optional[int]
-    center_score: Optional[float]
+    cluster: int | None
+    center_score: float | None
     clashes: int
     ec_contacts: int
     tm_contacts: int
     ic_contacts: int
     ec_pct: float
     validity_score: float = 0.0
-    alignment_rmsd: Optional[float] = None
-    error: Optional[str] = None
+    alignment_rmsd: float | None = None
+    error: str | None = None
 
 
 def calculate_validity_score(ec_pct: float, clashes: int, tm_contacts: int, ic_contacts: int) -> float:
@@ -494,8 +495,8 @@ def get_cluspro_scores(target_dir: str) -> tuple:
     Returns:
         Tuple of (scores_dict, coefficient_str) where coefficient is e.g. "000"
     """
-    scores = {}
-    coefficient = None
+    scores: dict[int, float] = {}
+    coefficient: str | None = None
     score_files = list(Path(target_dir).glob("cluspro_scores.*.csv"))
 
     if not score_files:
@@ -522,7 +523,7 @@ def validate_docking(
     receptor_pdb: str,
     results_dir: str,
     topology: Topology,
-    output_dir: Optional[str] = None,
+    output_dir: str | None = None,
     contact_threshold: float = DEFAULT_CONTACT_THRESHOLD,
     clash_threshold: float = DEFAULT_CLASH_THRESHOLD,
     find_min_clash: bool = True,

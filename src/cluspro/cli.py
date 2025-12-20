@@ -7,7 +7,7 @@ Provides CLI commands for all ClusPro automation operations.
 import logging
 import sys
 from pathlib import Path
-from typing import Optional
+from typing import Any
 
 import click
 import pandas as pd
@@ -29,7 +29,7 @@ from cluspro.utils import (
 @click.option("--guest", is_flag=True, help="Force guest mode (no account login)")
 @click.option("--login", is_flag=True, help="Force account login (prompt if needed)")
 @click.pass_context
-def main(ctx, verbose: bool, quiet: bool, config: Optional[str], guest: bool, login: bool):
+def main(ctx, verbose: bool, quiet: bool, config: str | None, guest: bool, login: bool):
     """
     ClusPro Automation CLI - Automate protein docking with ClusPro web server.
 
@@ -146,7 +146,7 @@ def submit(ctx, name: str, receptor: str, ligand: str, server: str, no_headless:
 @click.option("--stop-on-error", is_flag=True, help="Stop on first error")
 @click.option("-o", "--output", type=click.Path(), help="Output CSV for results")
 @click.pass_context
-def submit_batch_cmd(ctx, input_file: str, no_headless: bool, stop_on_error: bool, output: Optional[str]):
+def submit_batch_cmd(ctx, input_file: str, no_headless: bool, stop_on_error: bool, output: str | None):
     """
     Submit multiple jobs from a CSV file.
 
@@ -221,7 +221,7 @@ def dry_run_cmd(ctx, input_file: str):
 @click.option("--no-headless", is_flag=True, help="Show browser window")
 @click.option("-o", "--output", type=click.Path(), help="Output CSV file")
 @click.pass_context
-def queue(ctx, user: Optional[str], pattern: Optional[str], no_headless: bool, output: Optional[str]):
+def queue(ctx, user: str | None, pattern: str | None, no_headless: bool, output: str | None):
     """
     Check ClusPro job queue status.
 
@@ -272,11 +272,11 @@ def queue(ctx, user: Optional[str], pattern: Optional[str], no_headless: bool, o
 @click.pass_context
 def results(
     ctx,
-    pattern: Optional[str],
+    pattern: str | None,
     max_pages: int,
     no_headless: bool,
-    output: Optional[str],
-    output_csv: Optional[str],
+    output: str | None,
+    output_csv: str | None,
 ):
     """
     Get completed job results from ClusPro.
@@ -332,7 +332,7 @@ def results(
 @click.option("--max-pages", default=50, help="Maximum pages to parse")
 @click.option("--no-headless", is_flag=True, help="Show browser window")
 @click.pass_context
-def summary(ctx, pattern: Optional[str], max_pages: int, no_headless: bool):
+def summary(ctx, pattern: str | None, max_pages: int, no_headless: bool):
     """
     Get summary of job results.
 
@@ -377,7 +377,7 @@ def summary(ctx, pattern: Optional[str], max_pages: int, no_headless: bool):
 @click.option("--pdb/--no-pdb", default=True, help="Download PDB files")
 @click.option("--no-headless", is_flag=True, help="Show browser window")
 @click.pass_context
-def download(ctx, job_id: int, output_dir: Optional[str], pdb: bool, no_headless: bool):
+def download(ctx, job_id: int, output_dir: str | None, pdb: bool, no_headless: bool):
     """
     Download results for a single job.
 
@@ -412,7 +412,7 @@ def download(ctx, job_id: int, output_dir: Optional[str], pdb: bool, no_headless
 @click.option("--stop-on-error", is_flag=True, help="Stop on first error")
 @click.pass_context
 def download_batch_cmd(
-    ctx, ids: str, output_dir: Optional[str], pdb: bool, no_headless: bool, stop_on_error: bool
+    ctx, ids: str, output_dir: str | None, pdb: bool, no_headless: bool, stop_on_error: bool
 ):
     """
     Download results for multiple jobs.
@@ -459,8 +459,8 @@ def download_batch_cmd(
 def organize(
     ctx,
     mapping_file: str,
-    source_dir: Optional[str],
-    target_dir: Optional[str],
+    source_dir: str | None,
+    target_dir: str | None,
     pdb: bool,
 ):
     """
@@ -497,7 +497,7 @@ def organize(
 @main.command("list")
 @click.option("-d", "--dir", "target_dir", type=click.Path(exists=True), help="Directory to list")
 @click.pass_context
-def list_organized(ctx, target_dir: Optional[str]):
+def list_organized(ctx, target_dir: str | None):
     """
     List organized result directories.
 
@@ -594,9 +594,9 @@ def validate(
     ctx,
     receptor: str,
     results_dir: str,
-    topology: Optional[str],
-    uniprot: Optional[str],
-    output_dir: Optional[str],
+    topology: str | None,
+    uniprot: str | None,
+    output_dir: str | None,
     contact_threshold: float,
     clash_threshold: float,
     all_models: bool,
@@ -640,6 +640,7 @@ def validate(
             click.echo(f"Fetching topology from UniProt: {uniprot}")
             topo = fetch_topology_from_uniprot(uniprot)
         else:
+            assert topology is not None  # Validated above: either --topology or --uniprot is required
             topo = load_topology_from_json(topology)
         click.echo(f"Loaded topology: {len(topo.extracellular)} EC, {len(topo.transmembrane)} TM, {len(topo.intracellular)} IC regions")
 
@@ -716,7 +717,7 @@ def jobs(ctx):
 @click.option("--batch", "batch_id", help="Filter by batch ID")
 @click.option("--limit", default=50, help="Maximum records to show")
 @click.pass_context
-def jobs_list(ctx, status: Optional[str], batch_id: Optional[str], limit: int):
+def jobs_list(ctx, status: str | None, batch_id: str | None, limit: int):
     """
     List job records from database.
 
@@ -802,6 +803,7 @@ def jobs_resume(ctx, batch_id: str, include_failed: bool, no_headless: bool):
 
         success = 0
         for job in pending:
+            assert job.id is not None, "Job from database must have an ID"
             try:
                 cluspro_id = submit_job(
                     job_name=job.job_name,

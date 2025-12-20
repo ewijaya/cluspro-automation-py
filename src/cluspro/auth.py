@@ -12,7 +12,7 @@ import logging
 import os
 from dataclasses import dataclass
 from enum import Enum
-from typing import Optional
+from typing import Any
 
 import click
 
@@ -43,7 +43,7 @@ class Credentials:
     source: CredentialSource
 
 
-def _get_credentials_from_env() -> Optional[Credentials]:
+def _get_credentials_from_env() -> Credentials | None:
     """
     Get credentials from environment variables.
 
@@ -68,7 +68,7 @@ def _get_credentials_from_env() -> Optional[Credentials]:
     return None
 
 
-def _get_credentials_from_config(config: dict) -> Optional[Credentials]:
+def _get_credentials_from_config(config: dict[str, Any]) -> Credentials | None:
     """
     Get credentials from configuration dictionary.
 
@@ -118,9 +118,9 @@ def _get_credentials_interactive() -> Credentials:
 
 
 def get_credentials(
-    config: Optional[dict] = None,
+    config: dict[str, Any] | None = None,
     interactive: bool = True,
-) -> Optional[Credentials]:
+) -> Credentials | None:
     """
     Get credentials from available sources.
 
@@ -160,7 +160,7 @@ def get_credentials(
     return None
 
 
-def has_credentials(config: Optional[dict] = None) -> bool:
+def has_credentials(config: dict[str, Any] | None = None) -> bool:
     """
     Check if credentials are available (without prompting).
 

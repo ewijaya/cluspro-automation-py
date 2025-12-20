@@ -10,7 +10,7 @@ import shutil
 import subprocess
 import time
 from pathlib import Path
-from typing import Optional, Union
+from typing import Any
 
 import pandas as pd
 from selenium.common.exceptions import NoSuchElementException
@@ -79,11 +79,11 @@ def _download_scores(driver, wait) -> None:
 
 def download_results(
     job_id: int,
-    output_dir: Optional[Union[str, Path]] = None,
+    output_dir: str | Path | None = None,
     download_pdb: bool = True,
     headless: bool = True,
-    config: Optional[dict] = None,
-    credentials: Optional[Credentials] = None,
+    config: dict[str, Any] | None = None,
+    credentials: Credentials | None = None,
     force_guest: bool = False,
 ) -> Path:
     """
@@ -152,7 +152,7 @@ def download_results(
                 logger.warning(f"Could not extract job name, using: {job_name}")
 
             # Create job-specific output directory
-            job_output_dir = output_path / job_name
+            job_output_dir: Path = output_path / job_name
             job_output_dir.mkdir(parents=True, exist_ok=True)
 
             # Download PDB models if requested (with automatic retry)
@@ -267,16 +267,16 @@ def move_score_file(download_dir: Path, output_dir: Path) -> None:
 
 
 def download_batch(
-    job_ids: Union[str, list[int]],
-    output_dir: Optional[Union[str, Path]] = None,
+    job_ids: str | list[int],
+    output_dir: str | Path | None = None,
     download_pdb: bool = True,
     continue_on_error: bool = True,
     headless: bool = True,
-    config: Optional[dict] = None,
+    config: dict[str, Any] | None = None,
     progress: bool = True,
-    credentials: Optional[Credentials] = None,
+    credentials: Credentials | None = None,
     force_guest: bool = False,
-) -> dict:
+) -> dict[int, dict[str, str]]:
     """
     Download results for multiple jobs.
 
@@ -353,10 +353,10 @@ def download_batch(
 def get_job_name_from_page(
     job_id: int,
     headless: bool = True,
-    config: Optional[dict] = None,
-    credentials: Optional[Credentials] = None,
+    config: dict[str, Any] | None = None,
+    credentials: Credentials | None = None,
     force_guest: bool = False,
-) -> Optional[str]:
+) -> str | None:
     """
     Get job name from ClusPro job page.
 
@@ -390,7 +390,7 @@ def get_job_name_from_page(
             job_header = driver.find_element(
                 By.XPATH, "//div[@id='main-header-right']//following-sibling::h3"
             )
-            job_name = job_header.text.replace("Job Details: ", "").strip()
+            job_name: str = job_header.text.replace("Job Details: ", "").strip()
             return job_name
 
         except Exception as e:

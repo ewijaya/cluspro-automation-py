@@ -7,7 +7,7 @@ Parses the ClusPro job queue to check status of submitted jobs.
 import logging
 import re
 import time
-from typing import Optional
+from typing import Any, cast
 
 import pandas as pd
 from bs4 import BeautifulSoup
@@ -21,11 +21,11 @@ logger = logging.getLogger(__name__)
 
 
 def get_queue_status(
-    filter_user: Optional[str] = None,
-    filter_pattern: Optional[str] = None,
+    filter_user: str | None = None,
+    filter_pattern: str | None = None,
     headless: bool = True,
-    config: Optional[dict] = None,
-    credentials: Optional[Credentials] = None,
+    config: dict[str, Any] | None = None,
+    credentials: Credentials | None = None,
     force_guest: bool = False,
 ) -> pd.DataFrame:
     """
@@ -157,10 +157,10 @@ def parse_html_table(table) -> pd.DataFrame:
 def check_job_in_queue(
     job_name: str,
     headless: bool = True,
-    config: Optional[dict] = None,
-    credentials: Optional[Credentials] = None,
+    config: dict[str, Any] | None = None,
+    credentials: Credentials | None = None,
     force_guest: bool = False,
-) -> Optional[dict]:
+) -> dict[str, Any] | None:
     """
     Check if a specific job is in the queue.
 
@@ -194,17 +194,17 @@ def check_job_in_queue(
     if matches.empty:
         return None
 
-    return matches.iloc[0].to_dict()
+    return cast(dict[str, Any], matches.iloc[0].to_dict())
 
 
 def wait_for_queue_clear(
-    filter_user: Optional[str] = None,
-    filter_pattern: Optional[str] = None,
+    filter_user: str | None = None,
+    filter_pattern: str | None = None,
     check_interval: int = 60,
     max_wait: int = 3600,
     headless: bool = True,
-    config: Optional[dict] = None,
-    credentials: Optional[Credentials] = None,
+    config: dict[str, Any] | None = None,
+    credentials: Credentials | None = None,
     force_guest: bool = False,
 ) -> bool:
     """
