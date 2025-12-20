@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "cluspro-automation-py"
-version = "0.4.0"
+version = "0.4.1"
 description = "Python automation tool for ClusPro protein docking web server"
 readme = "README.md"
 license = {text = "MIT"}
