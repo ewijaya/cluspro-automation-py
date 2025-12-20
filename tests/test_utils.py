@@ -1,6 +1,5 @@
 """Tests for utility functions."""
 
-
 from cluspro.utils import expand_sequences, format_job_ids, group_sequences
 
 

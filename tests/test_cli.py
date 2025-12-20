@@ -1,7 +1,6 @@
 """Tests for CLI module."""
 
 
-
 class TestMainCommand:
     """Tests for main CLI command."""
 

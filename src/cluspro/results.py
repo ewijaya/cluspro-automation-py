@@ -96,9 +96,7 @@ def get_finished_jobs(
 
                 # Try to navigate to next page
                 try:
-                    next_link = driver.find_element(
-                        By.XPATH, "//a[contains(text(),'next ->')]"
-                    )
+                    next_link = driver.find_element(By.XPATH, "//a[contains(text(),'next ->')]")
                     next_link.click()
                     time.sleep(page_load_wait)
                 except NoSuchElementException:
@@ -325,9 +323,7 @@ def get_results_summary(
                         all_tables.append(df)
 
                 try:
-                    next_link = driver.find_element(
-                        By.XPATH, "//a[contains(text(),'next ->')]"
-                    )
+                    next_link = driver.find_element(By.XPATH, "//a[contains(text(),'next ->')]")
                     next_link.click()
                     time.sleep(page_load_wait)
                 except NoSuchElementException:

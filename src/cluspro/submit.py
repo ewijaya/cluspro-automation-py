@@ -50,9 +50,7 @@ def _fill_and_submit_form(
     Handles both guest and logged-in user forms.
     """
     # Fill job name
-    job_name_input = wait.until(
-        EC.presence_of_element_located((By.NAME, "jobname"))
-    )
+    job_name_input = wait.until(EC.presence_of_element_located((By.NAME, "jobname")))
     job_name_input.clear()
     job_name_input.send_keys(job_name)
     logger.debug(f"Entered job name: {job_name}")
@@ -347,9 +345,7 @@ def submit_from_csv(
     )
 
 
-def dry_run(
-    jobs: pd.DataFrame | list[dict], output: bool = True
-) -> pd.DataFrame:
+def dry_run(jobs: pd.DataFrame | list[dict], output: bool = True) -> pd.DataFrame:
     """
     Preview jobs without submitting.
 

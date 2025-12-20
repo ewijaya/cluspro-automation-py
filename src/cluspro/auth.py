@@ -87,9 +87,7 @@ def _get_credentials_from_config(config: dict[str, Any]) -> Credentials | None:
 
     if username and password:
         logger.debug("Credentials loaded from config file")
-        return Credentials(
-            username=username, password=password, source=CredentialSource.CONFIG
-        )
+        return Credentials(username=username, password=password, source=CredentialSource.CONFIG)
 
     if username or password:
         logger.debug("Partial credentials in config (both required)")
@@ -112,9 +110,7 @@ def _get_credentials_interactive() -> Credentials:
     password = click.prompt("Password", hide_input=True)
 
     logger.debug("Credentials obtained via interactive prompt")
-    return Credentials(
-        username=username, password=password, source=CredentialSource.INTERACTIVE
-    )
+    return Credentials(username=username, password=password, source=CredentialSource.INTERACTIVE)
 
 
 def get_credentials(

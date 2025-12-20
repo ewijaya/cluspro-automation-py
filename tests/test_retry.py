@@ -1,6 +1,5 @@
 """Tests for retry module."""
 
-
 import pytest
 from selenium.common.exceptions import (
     TimeoutException,
@@ -32,9 +31,7 @@ class TestRetryDecorators:
         from cluspro.retry import create_retry_decorator
 
         # Create a decorator with faster retry for testing
-        fast_retry = create_retry_decorator(
-            max_attempts=3, min_wait=0.01, max_wait=0.02
-        )
+        fast_retry = create_retry_decorator(max_attempts=3, min_wait=0.01, max_wait=0.02)
 
         call_count = 0
 
@@ -55,9 +52,7 @@ class TestRetryDecorators:
         """Test retry_browser gives up after max attempts."""
         from cluspro.retry import create_retry_decorator
 
-        fast_retry = create_retry_decorator(
-            max_attempts=2, min_wait=0.01, max_wait=0.02
-        )
+        fast_retry = create_retry_decorator(max_attempts=2, min_wait=0.01, max_wait=0.02)
 
         call_count = 0
 

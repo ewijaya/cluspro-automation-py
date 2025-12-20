@@ -135,9 +135,7 @@ class TestDownloadBatch:
 
         from cluspro.download import download_batch
 
-        results = download_batch(
-            [1, 2], continue_on_error=True, progress=False, config=mock_config
-        )
+        results = download_batch([1, 2], continue_on_error=True, progress=False, config=mock_config)
 
         assert len(results) == 2
         assert all(r["status"] == "error" for r in results.values())

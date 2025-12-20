@@ -109,9 +109,7 @@ def create_browser(
                 "application/zip",
             ],
         )
-        options.set_preference(
-            "browser.helperApps.neverAsk.saveToDisk", ",".join(mime_types)
-        )
+        options.set_preference("browser.helperApps.neverAsk.saveToDisk", ",".join(mime_types))
         logger.debug(f"Download directory set to: {download_path}")
 
     # Disable notifications and other popups
@@ -185,9 +183,7 @@ def browser_session(
         ...     driver.get("https://cluspro.bu.edu")
         ...     # Browser automatically closed after this block
     """
-    driver = create_browser(
-        headless=headless, download_dir=download_dir, config=config
-    )
+    driver = create_browser(headless=headless, download_dir=download_dir, config=config)
     try:
         yield driver
     finally:
@@ -285,9 +281,7 @@ def perform_login(driver: webdriver.Firefox, credentials: Credentials) -> None:
     password_field.send_keys(credentials.password)
 
     # Click login button
-    login_button = driver.find_element(
-        By.XPATH, "//input[@name='action'][@value='Login']"
-    )
+    login_button = driver.find_element(By.XPATH, "//input[@name='action'][@value='Login']")
     login_button.click()
     logger.debug("Submitted login form")
 

@@ -41,9 +41,7 @@ def _download_pdb_models(driver, wait, download_wait: int) -> None:
         download_wait: Time to wait for download to complete
     """
     download_link = wait.until(
-        EC.element_to_be_clickable(
-            (By.LINK_TEXT, "Download all Models for all Coefficients")
-        )
+        EC.element_to_be_clickable((By.LINK_TEXT, "Download all Models for all Coefficients"))
     )
     download_link.click()
     logger.debug("Clicked download models link")
@@ -59,16 +57,12 @@ def _download_scores(driver, wait) -> None:
         driver: WebDriver instance
         wait: WebDriverWait instance
     """
-    scores_link = wait.until(
-        EC.element_to_be_clickable((By.LINK_TEXT, "View Model Scores"))
-    )
+    scores_link = wait.until(EC.element_to_be_clickable((By.LINK_TEXT, "View Model Scores")))
     scores_link.click()
     time.sleep(2)
 
     download_scores_link = wait.until(
-        EC.element_to_be_clickable(
-            (By.LINK_TEXT, "Download Model Scores for this Coefficient")
-        )
+        EC.element_to_be_clickable((By.LINK_TEXT, "Download Model Scores for this Coefficient"))
     )
     download_scores_link.click()
     logger.debug("Clicked download scores link")
@@ -124,9 +118,7 @@ def download_results(
 
     logger.info(f"Downloading results for job {job_id}...")
 
-    with browser_session(
-        headless=headless, download_dir=str(output_path), config=config
-    ) as driver:
+    with browser_session(headless=headless, download_dir=str(output_path), config=config) as driver:
         try:
             # Navigate to job results page
             driver.get(job_url)
@@ -176,7 +168,9 @@ def download_results(
             raise DownloadError(f"Failed to download job {job_id}: {e}") from e
 
 
-@with_retry(max_attempts=3, min_wait=2, exceptions=(OSError, IOError, subprocess.CalledProcessError))
+@with_retry(
+    max_attempts=3, min_wait=2, exceptions=(OSError, IOError, subprocess.CalledProcessError)
+)
 def extract_archive(download_dir: Path, output_dir: Path) -> None:
     """
     Extract downloaded tar.bz2 archive.
@@ -207,9 +201,7 @@ def extract_archive(download_dir: Path, output_dir: Path) -> None:
 
         # Find extracted directory (usually named cluspro.JOBID)
         extracted_dirs = [
-            d
-            for d in download_dir.iterdir()
-            if d.is_dir() and d.name.startswith("cluspro.")
+            d for d in download_dir.iterdir() if d.is_dir() and d.name.startswith("cluspro.")
         ]
 
         if extracted_dirs:

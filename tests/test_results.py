@@ -79,9 +79,7 @@ class TestGetJobIdsCompressed:
 
     def test_returns_compressed_ids(self, mocker, mock_config):
         """Test compressed ID output."""
-        mock_df = pd.DataFrame(
-            {"job_id": [1, 2, 3, 5, 6], "status": ["finished"] * 5}
-        )
+        mock_df = pd.DataFrame({"job_id": [1, 2, 3, 5, 6], "status": ["finished"] * 5})
 
         mocker.patch("cluspro.results.get_finished_jobs", return_value=mock_df)
 

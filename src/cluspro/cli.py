@@ -102,9 +102,13 @@ def main(ctx, verbose: bool, quiet: bool, config: str | None, guest: bool, login
 
 @main.command()
 @click.option("-n", "--name", required=True, help="Job name")
-@click.option("-r", "--receptor", required=True, type=click.Path(exists=True), help="Receptor PDB file")
+@click.option(
+    "-r", "--receptor", required=True, type=click.Path(exists=True), help="Receptor PDB file"
+)
 @click.option("-l", "--ligand", required=True, type=click.Path(exists=True), help="Ligand PDB file")
-@click.option("-s", "--server", default="gpu", type=click.Choice(["gpu", "cpu"]), help="Server type")
+@click.option(
+    "-s", "--server", default="gpu", type=click.Choice(["gpu", "cpu"]), help="Server type"
+)
 @click.option("--no-headless", is_flag=True, help="Show browser window")
 @click.pass_context
 def submit(ctx, name: str, receptor: str, ligand: str, server: str, no_headless: bool):
@@ -137,12 +141,21 @@ def submit(ctx, name: str, receptor: str, ligand: str, server: str, no_headless:
 
 
 @main.command("submit-batch")
-@click.option("-i", "--input", "input_file", required=True, type=click.Path(exists=True), help="CSV file with jobs")
+@click.option(
+    "-i",
+    "--input",
+    "input_file",
+    required=True,
+    type=click.Path(exists=True),
+    help="CSV file with jobs",
+)
 @click.option("--no-headless", is_flag=True, help="Show browser window")
 @click.option("--stop-on-error", is_flag=True, help="Stop on first error")
 @click.option("-o", "--output", type=click.Path(), help="Output CSV for results")
 @click.pass_context
-def submit_batch_cmd(ctx, input_file: str, no_headless: bool, stop_on_error: bool, output: str | None):
+def submit_batch_cmd(
+    ctx, input_file: str, no_headless: bool, stop_on_error: bool, output: str | None
+):
     """
     Submit multiple jobs from a CSV file.
 
@@ -180,7 +193,14 @@ def submit_batch_cmd(ctx, input_file: str, no_headless: bool, stop_on_error: boo
 
 
 @main.command("dry-run")
-@click.option("-i", "--input", "input_file", required=True, type=click.Path(exists=True), help="CSV file with jobs")
+@click.option(
+    "-i",
+    "--input",
+    "input_file",
+    required=True,
+    type=click.Path(exists=True),
+    help="CSV file with jobs",
+)
 @click.pass_context
 def dry_run_cmd(ctx, input_file: str):
     """
@@ -447,7 +467,14 @@ def download_batch_cmd(
 
 
 @main.command()
-@click.option("-i", "--input", "mapping_file", required=True, type=click.Path(exists=True), help="CSV mapping file")
+@click.option(
+    "-i",
+    "--input",
+    "mapping_file",
+    required=True,
+    type=click.Path(exists=True),
+    help="CSV mapping file",
+)
 @click.option("-s", "--source-dir", type=click.Path(exists=True), help="Source directory")
 @click.option("-t", "--target-dir", type=click.Path(), help="Target directory")
 @click.option("--pdb/--no-pdb", default=True, help="Include PDB files")
@@ -577,14 +604,32 @@ def config(ctx):
 
 
 @main.command()
-@click.option("-r", "--receptor", required=True, type=click.Path(exists=True), help="Full receptor PDB file")
-@click.option("-d", "--results-dir", required=True, type=click.Path(exists=True), help="ClusPro results directory")
+@click.option(
+    "-r", "--receptor", required=True, type=click.Path(exists=True), help="Full receptor PDB file"
+)
+@click.option(
+    "-d",
+    "--results-dir",
+    required=True,
+    type=click.Path(exists=True),
+    help="ClusPro results directory",
+)
 @click.option("-t", "--topology", type=click.Path(exists=True), help="Topology JSON file")
-@click.option("-u", "--uniprot", help="UniProt accession ID (e.g., Q3UG50) - fetches topology from UniProt API")
+@click.option(
+    "-u",
+    "--uniprot",
+    help="UniProt accession ID (e.g., Q3UG50) - fetches topology from UniProt API",
+)
 @click.option("-o", "--output-dir", type=click.Path(), help="Output directory for results")
-@click.option("--contact-threshold", default=4.5, type=float, help="Contact distance threshold (Angstroms)")
-@click.option("--clash-threshold", default=2.0, type=float, help="Clash distance threshold (Angstroms)")
-@click.option("--all-models", is_flag=True, help="Validate all models (default: find min-clash per target)")
+@click.option(
+    "--contact-threshold", default=4.5, type=float, help="Contact distance threshold (Angstroms)"
+)
+@click.option(
+    "--clash-threshold", default=2.0, type=float, help="Clash distance threshold (Angstroms)"
+)
+@click.option(
+    "--all-models", is_flag=True, help="Validate all models (default: find min-clash per target)"
+)
 @click.pass_context
 def validate(
     ctx,
@@ -640,9 +685,13 @@ def validate(
             click.echo(f"Fetching topology from UniProt: {uniprot}")
             topo = fetch_topology_from_uniprot(uniprot)
         else:
-            assert topology is not None  # Validated above: either --topology or --uniprot is required
+            assert (
+                topology is not None
+            )  # Validated above: either --topology or --uniprot is required
             topo = load_topology_from_json(topology)
-        click.echo(f"Loaded topology: {len(topo.extracellular)} EC, {len(topo.transmembrane)} TM, {len(topo.intracellular)} IC regions")
+        click.echo(
+            f"Loaded topology: {len(topo.extracellular)} EC, {len(topo.transmembrane)} TM, {len(topo.intracellular)} IC regions"
+        )
 
         # Run validation
         results = validate_docking(
@@ -667,7 +716,9 @@ def validate(
 
         for i, r in enumerate(results[:20], 1):  # Show top 20
             if r.error is None:
-                click.echo(f"{i:<6}{r.target:<20}{r.model:<18}{r.clashes:<10}{r.ec_pct:<8.1f}{r.validity_score:<8.1f}")
+                click.echo(
+                    f"{i:<6}{r.target:<20}{r.model:<18}{r.clashes:<10}{r.ec_pct:<8.1f}{r.validity_score:<8.1f}"
+                )
 
         if len(results) > 20:
             click.echo(f"... and {len(results) - 20} more")
@@ -713,7 +764,13 @@ def jobs(ctx):
 
 
 @jobs.command("list")
-@click.option("--status", type=click.Choice(["pending", "submitted", "queued", "running", "completed", "failed", "cancelled"]), help="Filter by status")
+@click.option(
+    "--status",
+    type=click.Choice(
+        ["pending", "submitted", "queued", "running", "completed", "failed", "cancelled"]
+    ),
+    help="Filter by status",
+)
 @click.option("--batch", "batch_id", help="Filter by batch ID")
 @click.option("--limit", default=50, help="Maximum records to show")
 @click.pass_context
@@ -815,7 +872,11 @@ def jobs_resume(ctx, batch_id: str, include_failed: bool, no_headless: bool):
                     credentials=ctx.obj.get("credentials"),
                     force_guest=ctx.obj.get("force_guest", False),
                 )
-                db.update_status(job.id, JobStatus.SUBMITTED, cluspro_job_id=int(cluspro_id) if cluspro_id else None)
+                db.update_status(
+                    job.id,
+                    JobStatus.SUBMITTED,
+                    cluspro_job_id=int(cluspro_id) if cluspro_id else None,
+                )
                 success += 1
                 click.echo(f"  Submitted: {job.job_name}")
             except Exception as e:

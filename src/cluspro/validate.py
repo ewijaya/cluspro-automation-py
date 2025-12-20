@@ -36,16 +36,13 @@ try:
     from Bio.PDB import PDBParser, Superimposer
 except ImportError:
     raise ImportError(
-        "BioPython is required for docking validation. "
-        "Install with: pip install biopython"
+        "BioPython is required for docking validation. Install with: pip install biopython"
     )
 
 try:
     from scipy.spatial import cKDTree
 except ImportError:
-    raise ImportError(
-        "SciPy is required for docking validation. " "Install with: pip install scipy"
-    )
+    raise ImportError("SciPy is required for docking validation. Install with: pip install scipy")
 
 logger = logging.getLogger(__name__)
 
@@ -95,7 +92,9 @@ class ValidationResult:
     error: str | None = None
 
 
-def calculate_validity_score(ec_pct: float, clashes: int, tm_contacts: int, ic_contacts: int) -> float:
+def calculate_validity_score(
+    ec_pct: float, clashes: int, tm_contacts: int, ic_contacts: int
+) -> float:
     """
     Calculate composite validity score (0-100).
 
@@ -281,8 +280,15 @@ def fetch_topology_from_uniprot(accession: str, alignment_region: str = "ECL1") 
             alignment = (None, None)
 
     # Get protein name for logging
-    protein_name = data.get("proteinDescription", {}).get("recommendedName", {}).get("fullName", {}).get("value", accession)
-    logger.info(f"Loaded topology for {protein_name}: {len(extracellular)} EC, {len(transmembrane)} TM, {len(intracellular)} IC regions")
+    protein_name = (
+        data.get("proteinDescription", {})
+        .get("recommendedName", {})
+        .get("fullName", {})
+        .get("value", accession)
+    )
+    logger.info(
+        f"Loaded topology for {protein_name}: {len(extracellular)} EC, {len(transmembrane)} TM, {len(intracellular)} IC regions"
+    )
 
     return Topology(
         extracellular=extracellular,
@@ -347,9 +353,7 @@ class DockingValidator:
             for chain in model:
                 for residue in chain:
                     res_num = residue.id[1]
-                    is_receptor = any(
-                        start <= res_num <= end for start, end in receptor_ranges
-                    )
+                    is_receptor = any(start <= res_num <= end for start, end in receptor_ranges)
                     for atom in residue:
                         if is_receptor:
                             receptor_atoms.append(atom)
@@ -375,9 +379,7 @@ class DockingValidator:
             clashes += len(clash_indices)
 
             # Check for contacts
-            contact_indices = tree.query_ball_point(
-                pep_atom.coord, self.contact_threshold
-            )
+            contact_indices = tree.query_ball_point(pep_atom.coord, self.contact_threshold)
             for idx in contact_indices:
                 rec_atom = self.receptor_atoms[idx]
                 res_num = rec_atom.get_parent().id[1]
@@ -402,9 +404,7 @@ class DockingValidator:
                 pass
 
         try:
-            docked_structure, rec_atoms, pep_atoms = self._parse_docked_complex(
-                pdb_path
-            )
+            docked_structure, rec_atoms, pep_atoms = self._parse_docked_complex(pdb_path)
 
             if not pep_atoms:
                 return ValidationResult(
@@ -423,12 +423,8 @@ class DockingValidator:
             # Get CA atoms for alignment
             align_start, align_end = self.topology.alignment_residues
             if align_start and align_end:
-                docked_ca = self._get_ca_atoms_in_range(
-                    docked_structure, align_start, align_end
-                )
-                full_ca = self._get_ca_atoms_in_range(
-                    self.receptor, align_start, align_end
-                )
+                docked_ca = self._get_ca_atoms_in_range(docked_structure, align_start, align_end)
+                full_ca = self._get_ca_atoms_in_range(self.receptor, align_start, align_end)
 
                 if len(docked_ca) >= 3 and len(full_ca) >= 3:
                     min_atoms = min(len(docked_ca), len(full_ca))
@@ -553,9 +549,7 @@ def validate_docking(
     results_path = Path(results_dir)
 
     # Scan all directories for targets
-    targets = [
-        d.name for d in results_path.iterdir() if d.is_dir() and not d.name.startswith(".")
-    ]
+    targets = [d.name for d in results_path.iterdir() if d.is_dir() and not d.name.startswith(".")]
 
     results = []
 
@@ -579,7 +573,7 @@ def validate_docking(
             logger.warning(f"No model files found in {target_dir}")
             continue
 
-        logger.info(f"[{i+1}/{len(targets)}] Validating {target}: {len(model_files)} models")
+        logger.info(f"[{i + 1}/{len(targets)}] Validating {target}: {len(model_files)} models")
 
         if find_min_clash:
             # Find model with minimum clashes
@@ -633,7 +627,9 @@ def _write_results(results: list, topology: Topology, output_dir: str):
         f.write("# =============================================================================\n")
         f.write("#\n")
         f.write("# METHODOLOGY:\n")
-        f.write("# Validates peptide-GPCR docking poses by analyzing contacts with receptor regions.\n")
+        f.write(
+            "# Validates peptide-GPCR docking poses by analyzing contacts with receptor regions.\n"
+        )
         f.write("#\n")
         f.write("# TOPOLOGY:\n")
         f.write(f"#   Extracellular: {topology.extracellular}\n")
@@ -664,17 +660,38 @@ def _write_results(results: list, topology: Topology, output_dir: str):
 
         # Write CSV data
         writer = csv.writer(f)
-        writer.writerow([
-            "rank", "target", "model", "cluster", "center_score",
-            "clashes", "ec_contacts", "tm_contacts", "ic_contacts", "ec_pct", "validity_score"
-        ])
+        writer.writerow(
+            [
+                "rank",
+                "target",
+                "model",
+                "cluster",
+                "center_score",
+                "clashes",
+                "ec_contacts",
+                "tm_contacts",
+                "ic_contacts",
+                "ec_pct",
+                "validity_score",
+            ]
+        )
 
         for i, r in enumerate(results, 1):
             if r.error is None:
-                writer.writerow([
-                    i, r.target, r.model, r.cluster or "N/A",
-                    r.center_score or "N/A", r.clashes,
-                    r.ec_contacts, r.tm_contacts, r.ic_contacts, r.ec_pct, r.validity_score
-                ])
+                writer.writerow(
+                    [
+                        i,
+                        r.target,
+                        r.model,
+                        r.cluster or "N/A",
+                        r.center_score or "N/A",
+                        r.clashes,
+                        r.ec_contacts,
+                        r.tm_contacts,
+                        r.ic_contacts,
+                        r.ec_pct,
+                        r.validity_score,
+                    ]
+                )
 
     logger.info(f"Results written to: {csv_path}")

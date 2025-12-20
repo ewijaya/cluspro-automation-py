@@ -109,7 +109,7 @@ class TestDryRun:
         results = dry_run(jobs, output=False)
 
         assert len(results) == 1
-        assert results.iloc[0]["valid"] is True
+        assert results.iloc[0]["valid"]  # truthy check for numpy bool
 
     def test_dry_run_detects_missing_files(self):
         """Test dry_run detects missing files."""
@@ -125,6 +125,6 @@ class TestDryRun:
 
         results = dry_run(jobs, output=False)
 
-        assert results.iloc[0]["valid"] is False
-        assert results.iloc[0]["receptor_exists"] is False
-        assert results.iloc[0]["ligand_exists"] is False
+        assert not results.iloc[0]["valid"]  # falsy check for numpy bool
+        assert not results.iloc[0]["receptor_exists"]
+        assert not results.iloc[0]["ligand_exists"]

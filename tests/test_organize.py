@@ -1,7 +1,6 @@
 """Tests for organize module."""
 
 
-
 class TestOrganizeResults:
     """Tests for organize_results function."""
 
