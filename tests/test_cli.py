@@ -219,3 +219,302 @@ class TestJobsCommand:
 
         assert result.exit_code != 0
         assert "Missing option" in result.output
+
+
+class TestResultsCommand:
+    """Tests for results CLI command."""
+
+    def test_results_help(self, cli_runner):
+        """Test results command help."""
+        from cluspro.cli import main
+
+        result = cli_runner.invoke(main, ["results", "--help"])
+
+        assert result.exit_code == 0
+        assert "--pattern" in result.output
+        assert "--max-pages" in result.output
+
+
+class TestSummaryCommand:
+    """Tests for summary CLI command."""
+
+    def test_summary_help(self, cli_runner):
+        """Test summary command help."""
+        from cluspro.cli import main
+
+        result = cli_runner.invoke(main, ["summary", "--help"])
+
+        assert result.exit_code == 0
+        assert "--pattern" in result.output
+
+
+class TestOrganizeCommand:
+    """Tests for organize CLI command."""
+
+    def test_organize_help(self, cli_runner):
+        """Test organize command help."""
+        from cluspro.cli import main
+
+        result = cli_runner.invoke(main, ["organize", "--help"])
+
+        assert result.exit_code == 0
+        assert "--input" in result.output
+        assert "--source-dir" in result.output
+        assert "--target-dir" in result.output
+
+    def test_organize_requires_input(self, cli_runner, mocker):
+        """Test organize requires input file."""
+        mocker.patch("cluspro.cli.load_config", return_value={})
+
+        from cluspro.cli import main
+
+        result = cli_runner.invoke(main, ["organize"])
+
+        assert result.exit_code != 0
+        assert "Missing option" in result.output
+
+
+class TestListCommand:
+    """Tests for list CLI command."""
+
+    def test_list_help(self, cli_runner):
+        """Test list command help."""
+        from cluspro.cli import main
+
+        result = cli_runner.invoke(main, ["list", "--help"])
+
+        assert result.exit_code == 0
+
+
+class TestValidateCommand:
+    """Tests for validate CLI command."""
+
+    def test_validate_help(self, cli_runner):
+        """Test validate command help."""
+        from cluspro.cli import main
+
+        result = cli_runner.invoke(main, ["validate", "--help"])
+
+        assert result.exit_code == 0
+        assert "--receptor" in result.output
+        assert "--results-dir" in result.output
+        assert "--topology" in result.output
+        assert "--uniprot" in result.output
+
+    def test_validate_requires_receptor(self, cli_runner, mocker):
+        """Test validate requires receptor option."""
+        mocker.patch("cluspro.cli.load_config", return_value={})
+
+        from cluspro.cli import main
+
+        result = cli_runner.invoke(main, ["validate"])
+
+        assert result.exit_code != 0
+        assert "Missing option" in result.output
+
+    def test_validate_requires_topology_or_uniprot(self, cli_runner, mocker, tmp_path):
+        """Test validate requires either topology or uniprot."""
+        mocker.patch("cluspro.cli.load_config", return_value={})
+
+        # Create temp receptor file
+        receptor = tmp_path / "receptor.pdb"
+        receptor.write_text("ATOM  1  CA  ALA A   1   0.0  0.0  0.0  1.0  0.0")
+
+        results_dir = tmp_path / "results"
+        results_dir.mkdir()
+
+        from cluspro.cli import main
+
+        result = cli_runner.invoke(
+            main,
+            ["validate", "--receptor", str(receptor), "--results-dir", str(results_dir)],
+        )
+
+        assert result.exit_code != 0
+        assert "Either --topology or --uniprot is required" in result.output
+
+
+class TestMutuallyExclusiveFlags:
+    """Tests for mutually exclusive CLI flags."""
+
+    def test_guest_and_login_mutually_exclusive(self, cli_runner, mocker):
+        """Test --guest and --login cannot be used together."""
+        mocker.patch("cluspro.cli.load_config", return_value={})
+
+        from cluspro.cli import main
+
+        # Need to invoke a subcommand (not --help) to trigger validation
+        result = cli_runner.invoke(main, ["--guest", "--login", "config"])
+
+        assert result.exit_code != 0
+        assert "Cannot use both --guest and --login" in result.output
+
+
+class TestSubmitBatchCommand:
+    """Tests for submit-batch CLI command."""
+
+    def test_submit_batch_help(self, cli_runner):
+        """Test submit-batch command help."""
+        from cluspro.cli import main
+
+        result = cli_runner.invoke(main, ["submit-batch", "--help"])
+
+        assert result.exit_code == 0
+        assert "--input" in result.output
+
+    def test_submit_batch_requires_input(self, cli_runner, mocker):
+        """Test submit-batch requires input file."""
+        mocker.patch("cluspro.cli.load_config", return_value={})
+
+        from cluspro.cli import main
+
+        result = cli_runner.invoke(main, ["submit-batch"])
+
+        assert result.exit_code != 0
+        assert "Missing option" in result.output
+
+
+class TestDryRunCommand:
+    """Tests for dry-run CLI command."""
+
+    def test_dry_run_help(self, cli_runner):
+        """Test dry-run command help."""
+        from cluspro.cli import main
+
+        result = cli_runner.invoke(main, ["dry-run", "--help"])
+
+        assert result.exit_code == 0
+        assert "--input" in result.output
+
+
+class TestDownloadBatchCommand:
+    """Tests for download-batch CLI command."""
+
+    def test_download_batch_help(self, cli_runner):
+        """Test download-batch command help."""
+        from cluspro.cli import main
+
+        result = cli_runner.invoke(main, ["download-batch", "--help"])
+
+        assert result.exit_code == 0
+        assert "--ids" in result.output
+
+    def test_download_batch_requires_ids(self, cli_runner, mocker):
+        """Test download-batch requires job IDs."""
+        mocker.patch("cluspro.cli.load_config", return_value={})
+
+        from cluspro.cli import main
+
+        result = cli_runner.invoke(main, ["download-batch"])
+
+        assert result.exit_code != 0
+        assert "Missing option" in result.output
+
+
+class TestDryRunExecution:
+    """Tests for dry-run command execution."""
+
+    def test_dry_run_with_valid_csv(self, cli_runner, mocker, tmp_path):
+        """Test dry-run with valid CSV file."""
+
+        mocker.patch("cluspro.cli.load_config", return_value={})
+
+        # Create test receptor and ligand files
+        receptor = tmp_path / "receptor.pdb"
+        ligand = tmp_path / "ligand.pdb"
+        receptor.write_text("ATOM  1  CA  ALA A   1   0.0  0.0  0.0  1.0  0.0")
+        ligand.write_text("ATOM  1  CA  ALA A   1   1.0  1.0  1.0  1.0  0.0")
+
+        # Create CSV file
+        csv_file = tmp_path / "jobs.csv"
+        csv_content = f"job_name,receptor_pdb,ligand_pdb\ntest-job,{receptor},{ligand}\n"
+        csv_file.write_text(csv_content)
+
+        from cluspro.cli import main
+
+        result = cli_runner.invoke(main, ["dry-run", "-i", str(csv_file)])
+
+        assert result.exit_code == 0
+        assert "1 valid" in result.output
+
+
+class TestSubmitExecution:
+    """Tests for submit command execution."""
+
+    def test_submit_success(self, cli_runner, mocker, tmp_path):
+        """Test submit command success."""
+        mocker.patch("cluspro.cli.load_config", return_value={})
+        # Patch at the location where it's imported
+        mocker.patch("cluspro.submit.submit_job", return_value="12345")
+
+        # Create test files
+        receptor = tmp_path / "receptor.pdb"
+        ligand = tmp_path / "ligand.pdb"
+        receptor.write_text("ATOM  1  CA  ALA A   1   0.0  0.0  0.0  1.0  0.0")
+        ligand.write_text("ATOM  1  CA  ALA A   1   1.0  1.0  1.0  1.0  0.0")
+
+        from cluspro.cli import main
+
+        result = cli_runner.invoke(
+            main, ["submit", "-n", "test-job", "-r", str(receptor), "-l", str(ligand)]
+        )
+
+        assert result.exit_code == 0
+        assert "submitted successfully" in result.output
+
+    def test_submit_error(self, cli_runner, mocker, tmp_path):
+        """Test submit command with error."""
+        mocker.patch("cluspro.cli.load_config", return_value={})
+        # Patch at the location where it's imported
+        mocker.patch("cluspro.submit.submit_job", side_effect=Exception("Connection failed"))
+
+        # Create test files
+        receptor = tmp_path / "receptor.pdb"
+        ligand = tmp_path / "ligand.pdb"
+        receptor.write_text("ATOM  1  CA  ALA A   1   0.0  0.0  0.0  1.0  0.0")
+        ligand.write_text("ATOM  1  CA  ALA A   1   1.0  1.0  1.0  1.0  0.0")
+
+        from cluspro.cli import main
+
+        result = cli_runner.invoke(
+            main, ["submit", "-n", "test-job", "-r", str(receptor), "-l", str(ligand)]
+        )
+
+        assert result.exit_code != 0
+        assert "Error" in result.output
+
+
+class TestConfigExecution:
+    """Tests for config command execution."""
+
+    def test_config_shows_empty(self, cli_runner, mocker):
+        """Test config shows empty config."""
+        mocker.patch("cluspro.cli.load_config", return_value={})
+
+        from cluspro.cli import main
+
+        result = cli_runner.invoke(main, ["config"])
+
+        assert result.exit_code == 0
+
+
+class TestExpandCompressExecution:
+    """Tests for expand and compress commands execution."""
+
+    def test_expand_multiple_ranges(self, cli_runner):
+        """Test expand with multiple ranges."""
+        from cluspro.cli import main
+
+        result = cli_runner.invoke(main, ["expand", "1:3,10:12"])
+
+        assert result.exit_code == 0
+        assert "1" in result.output
+        assert "10" in result.output
+
+    def test_compress_non_sequential(self, cli_runner):
+        """Test compress with non-sequential IDs."""
+        from cluspro.cli import main
+
+        result = cli_runner.invoke(main, ["compress", "1", "3", "5", "7"])
+
+        assert result.exit_code == 0

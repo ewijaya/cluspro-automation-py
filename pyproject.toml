@@ -90,3 +90,16 @@ warn_unused_ignores = true
 testpaths = ["tests"]
 python_files = ["test_*.py"]
 addopts = "-v --tb=short"
+
+[tool.coverage.run]
+source = ["src/cluspro"]
+omit = [
+    # Exclude validate.py - requires optional biopython/scipy dependencies
+    "src/cluspro/validate.py",
+]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "if TYPE_CHECKING:",
+]

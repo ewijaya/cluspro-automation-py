@@ -128,3 +128,83 @@ class TestDryRun:
         assert not results.iloc[0]["valid"]  # falsy check for numpy bool
         assert not results.iloc[0]["receptor_exists"]
         assert not results.iloc[0]["ligand_exists"]
+
+    def test_dry_run_with_dataframe(self, temp_pdb_files):
+        """Test dry_run with DataFrame input."""
+        from cluspro.submit import dry_run
+
+        jobs = pd.DataFrame(
+            [
+                {
+                    "job_name": "test1",
+                    "receptor_pdb": str(temp_pdb_files["receptor"]),
+                    "ligand_pdb": str(temp_pdb_files["ligand"]),
+                },
+                {
+                    "job_name": "test2",
+                    "receptor_pdb": "/nonexistent/receptor.pdb",
+                    "ligand_pdb": str(temp_pdb_files["ligand"]),
+                },
+            ]
+        )
+
+        results = dry_run(jobs, output=False)
+
+        assert len(results) == 2
+        assert results.iloc[0]["valid"]  # First job valid
+        assert not results.iloc[1]["valid"]  # Second job invalid
+
+
+class TestSubmissionError:
+    """Tests for SubmissionError exception."""
+
+    def test_submission_error(self):
+        """Test SubmissionError can be raised."""
+        from cluspro.submit import SubmissionError
+
+        with pytest.raises(SubmissionError, match="Test error"):
+            raise SubmissionError("Test error")
+
+
+class TestScrollAndClick:
+    """Tests for _scroll_and_click function."""
+
+    def test_scroll_and_click(self, mocker):
+        """Test scroll and click helper."""
+        mocker.patch("time.sleep")
+
+        from cluspro.submit import _scroll_and_click
+
+        mock_driver = MagicMock()
+        mock_element = MagicMock()
+
+        _scroll_and_click(mock_driver, mock_element)
+
+        mock_driver.execute_script.assert_called_once()
+        mock_element.click.assert_called_once()
+
+
+class TestSubmitBatchSuccess:
+    """Tests for successful batch submission."""
+
+    def test_submit_batch_success(self, mocker, mock_config, temp_pdb_files):
+        """Test successful batch submission."""
+        mocker.patch("cluspro.submit.load_config", return_value=mock_config)
+        mocker.patch("cluspro.submit.submit_job", return_value="12345")
+        mocker.patch("time.sleep")
+
+        from cluspro.submit import submit_batch
+
+        jobs = pd.DataFrame(
+            {
+                "job_name": ["job1", "job2"],
+                "receptor_pdb": [str(temp_pdb_files["receptor"])] * 2,
+                "ligand_pdb": [str(temp_pdb_files["ligand"])] * 2,
+            }
+        )
+
+        results = submit_batch(jobs, progress=False, config=mock_config)
+
+        assert len(results) == 2
+        assert all(r == "success" for r in results["status"])
+        assert all(r == "12345" for r in results["job_id"])
