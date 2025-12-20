@@ -5,14 +5,12 @@ Downloads PDB models and energy scores from ClusPro job results.
 """
 
 import logging
-import os
 import shutil
 import subprocess
 import time
 from pathlib import Path
 from typing import Any
 
-import pandas as pd
 from selenium.common.exceptions import NoSuchElementException
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
@@ -21,7 +19,7 @@ from tqdm import tqdm
 from cluspro.auth import Credentials
 from cluspro.browser import authenticate, browser_session, wait_for_element
 from cluspro.retry import retry_download, with_retry
-from cluspro.utils import ensure_dir, expand_sequences, load_config, resolve_path
+from cluspro.utils import ensure_dir, expand_sequences, load_config
 
 logger = logging.getLogger(__name__)
 

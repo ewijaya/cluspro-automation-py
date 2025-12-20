@@ -1,8 +1,8 @@
 """Tests for queue module."""
 
-import pytest
-import pandas as pd
 from unittest.mock import MagicMock
+
+import pandas as pd
 from bs4 import BeautifulSoup
 
 
@@ -35,9 +35,9 @@ class TestGetQueueStatus:
 
         from cluspro.queue import get_queue_status
 
-        df = get_queue_status(headless=True, config=mock_config)
+        _df = get_queue_status(headless=True, config=mock_config)
 
-        # The table should be parsed
+        # The table should be parsed (result captured for side effect verification)
 
 
 class TestParseHtmlTable:
@@ -162,4 +162,4 @@ class TestWaitForQueueClear:
         # Should return quickly
         result = wait_for_queue_clear(config=mock_config, max_wait=1)
 
-        assert result == True
+        assert result is True

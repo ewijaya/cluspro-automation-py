@@ -1,8 +1,5 @@
 """Tests for organize module."""
 
-import pytest
-import pandas as pd
-from pathlib import Path
 
 
 class TestOrganizeResults:
@@ -61,7 +58,7 @@ class TestOrganizeResults:
             }
         ]
 
-        results = organize_results(
+        organize_results(
             mapping,
             source_dir=source_dir,
             target_dir=target_dir,

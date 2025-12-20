@@ -7,12 +7,12 @@ status changes, and enabling batch operation resumption.
 
 import logging
 import sqlite3
+from collections.abc import Iterator
 from contextlib import contextmanager
 from dataclasses import dataclass
 from datetime import datetime
 from enum import Enum
 from pathlib import Path
-from typing import Iterator
 
 from cluspro.utils import resolve_path
 

@@ -1,8 +1,7 @@
 """Tests for utility functions."""
 
-import pytest
 
-from cluspro.utils import expand_sequences, group_sequences, format_job_ids
+from cluspro.utils import expand_sequences, format_job_ids, group_sequences
 
 
 class TestExpandSequences:

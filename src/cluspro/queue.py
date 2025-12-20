@@ -11,7 +11,6 @@ from typing import Any, cast
 
 import pandas as pd
 from bs4 import BeautifulSoup
-from selenium.webdriver.common.by import By
 
 from cluspro.auth import Credentials
 from cluspro.browser import authenticate, browser_session

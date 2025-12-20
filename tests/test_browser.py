@@ -1,7 +1,8 @@
 """Tests for browser module."""
 
+from unittest.mock import MagicMock
+
 import pytest
-from unittest.mock import MagicMock, patch
 
 
 class TestCreateBrowser:
@@ -15,19 +16,19 @@ class TestCreateBrowser:
 
         from cluspro.browser import create_browser
 
-        driver = create_browser(headless=True, config=mock_config)
+        _driver = create_browser(headless=True, config=mock_config)
 
         mock_webdriver.Firefox.assert_called_once()
 
     def test_create_browser_with_download_dir(self, mocker, mock_config, tmp_path):
         """Test browser creation with download directory."""
-        mock_webdriver = mocker.patch("cluspro.browser.webdriver")
+        mocker.patch("cluspro.browser.webdriver")
         mocker.patch("cluspro.browser.GeckoDriverManager")
         mocker.patch("cluspro.browser.load_config", return_value=mock_config)
 
         from cluspro.browser import create_browser
 
-        driver = create_browser(download_dir=str(tmp_path), config=mock_config)
+        _driver = create_browser(download_dir=str(tmp_path), config=mock_config)
 
         assert tmp_path.exists()
 
@@ -55,7 +56,7 @@ class TestBrowserSession:
         from cluspro.browser import browser_session
 
         with pytest.raises(ValueError):
-            with browser_session(config=mock_config) as driver:
+            with browser_session(config=mock_config) as _driver:
                 raise ValueError("Test error")
 
         mock_driver.quit.assert_called_once()

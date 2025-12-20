@@ -7,7 +7,6 @@ Organizes downloaded results into meaningful directory structures.
 import logging
 import shutil
 from pathlib import Path
-from typing import Optional, Union
 
 import pandas as pd
 
@@ -17,11 +16,11 @@ logger = logging.getLogger(__name__)
 
 
 def organize_results(
-    job_mapping: Union[pd.DataFrame, dict, list[dict]],
-    source_dir: Optional[Union[str, Path]] = None,
-    target_dir: Optional[Union[str, Path]] = None,
+    job_mapping: pd.DataFrame | dict | list[dict],
+    source_dir: str | Path | None = None,
+    target_dir: str | Path | None = None,
     include_pdb: bool = True,
-    config: Optional[dict] = None,
+    config: dict | None = None,
 ) -> dict:
     """
     Organize downloaded results into meaningful directory structure.
@@ -165,11 +164,11 @@ def apply_receptor_substitutions(receptor_name: str) -> str:
 
 
 def organize_from_csv(
-    csv_path: Union[str, Path],
-    source_dir: Optional[Union[str, Path]] = None,
-    target_dir: Optional[Union[str, Path]] = None,
+    csv_path: str | Path,
+    source_dir: str | Path | None = None,
+    target_dir: str | Path | None = None,
     include_pdb: bool = True,
-    config: Optional[dict] = None,
+    config: dict | None = None,
 ) -> dict:
     """
     Organize results using mapping from CSV file.
@@ -207,8 +206,8 @@ def organize_from_csv(
 
 
 def list_organized_results(
-    target_dir: Optional[Union[str, Path]] = None,
-    config: Optional[dict] = None,
+    target_dir: str | Path | None = None,
+    config: dict | None = None,
 ) -> pd.DataFrame:
     """
     List all organized result directories.
@@ -280,8 +279,8 @@ def list_organized_results(
 
 
 def cleanup_empty_dirs(
-    target_dir: Optional[Union[str, Path]] = None,
-    config: Optional[dict] = None,
+    target_dir: str | Path | None = None,
+    config: dict | None = None,
     dry_run: bool = True,
 ) -> list[str]:
     """

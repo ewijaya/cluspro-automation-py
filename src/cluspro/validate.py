@@ -25,8 +25,8 @@ from __future__ import annotations
 import csv
 import json
 import logging
-import urllib.request
 import urllib.error
+import urllib.request
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -136,7 +136,7 @@ def load_topology_from_json(json_path: str) -> Topology:
         ]
     }
     """
-    with open(json_path, "r") as f:
+    with open(json_path) as f:
         data = json.load(f)
 
     # Check if UniProt format
@@ -508,7 +508,7 @@ def get_cluspro_scores(target_dir: str) -> tuple:
     if len(parts) >= 3:
         coefficient = parts[2]  # e.g., "000", "002", "004", "006"
 
-    with open(score_files[0], "r") as f:
+    with open(score_files[0]) as f:
         reader = csv.DictReader(f)
         for row in reader:
             if row.get("Representative") == "Center":

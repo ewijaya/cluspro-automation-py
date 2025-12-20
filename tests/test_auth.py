@@ -6,10 +6,10 @@ from cluspro.auth import (
     AuthenticationError,
     Credentials,
     CredentialSource,
+    _get_credentials_from_config,
+    _get_credentials_from_env,
     get_credentials,
     has_credentials,
-    _get_credentials_from_env,
-    _get_credentials_from_config,
 )
 
 

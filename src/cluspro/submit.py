@@ -7,7 +7,6 @@ Handles submitting protein docking jobs to the ClusPro web server.
 import logging
 import time
 from pathlib import Path
-from typing import Optional, Union
 
 import pandas as pd
 from selenium.webdriver.common.by import By
@@ -99,14 +98,14 @@ def _fill_and_submit_form(
 
 def submit_job(
     job_name: str,
-    receptor_pdb: Union[str, Path],
-    ligand_pdb: Union[str, Path],
+    receptor_pdb: str | Path,
+    ligand_pdb: str | Path,
     server: str = "gpu",
     headless: bool = True,
-    config: Optional[dict] = None,
-    credentials: Optional[Credentials] = None,
+    config: dict | None = None,
+    credentials: Credentials | None = None,
     force_guest: bool = False,
-) -> Optional[str]:
+) -> str | None:
     """
     Submit a single docking job to ClusPro.
 
@@ -196,12 +195,12 @@ def submit_job(
 
 
 def submit_batch(
-    jobs: Union[pd.DataFrame, list[dict]],
+    jobs: pd.DataFrame | list[dict],
     headless: bool = True,
     continue_on_error: bool = True,
-    config: Optional[dict] = None,
+    config: dict | None = None,
     progress: bool = True,
-    credentials: Optional[Credentials] = None,
+    credentials: Credentials | None = None,
     force_guest: bool = False,
 ) -> pd.DataFrame:
     """
@@ -303,11 +302,11 @@ def submit_batch(
 
 
 def submit_from_csv(
-    csv_path: Union[str, Path],
+    csv_path: str | Path,
     headless: bool = True,
     continue_on_error: bool = True,
-    config: Optional[dict] = None,
-    credentials: Optional[Credentials] = None,
+    config: dict | None = None,
+    credentials: Credentials | None = None,
     force_guest: bool = False,
 ) -> pd.DataFrame:
     """
@@ -349,7 +348,7 @@ def submit_from_csv(
 
 
 def dry_run(
-    jobs: Union[pd.DataFrame, list[dict]], output: bool = True
+    jobs: pd.DataFrame | list[dict], output: bool = True
 ) -> pd.DataFrame:
     """
     Preview jobs without submitting.

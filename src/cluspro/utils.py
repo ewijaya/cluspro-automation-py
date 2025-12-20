@@ -5,9 +5,8 @@ Includes configuration loading, sequence compression, and file path helpers.
 """
 
 import logging
-import os
 from pathlib import Path
-from typing import Any, Union, cast
+from typing import Any, cast
 
 import yaml
 
@@ -216,7 +215,7 @@ def format_job_ids(job_ids: str, items_per_line: int = 5) -> str:
     return ",\n".join(lines)
 
 
-def resolve_path(path: Union[str, Path]) -> Path:
+def resolve_path(path: str | Path) -> Path:
     """
     Resolve path with home directory expansion.
 
@@ -233,7 +232,7 @@ def resolve_path(path: Union[str, Path]) -> Path:
     return Path(path).expanduser().resolve()
 
 
-def ensure_dir(path: Union[str, Path]) -> Path:
+def ensure_dir(path: str | Path) -> Path:
     """
     Ensure directory exists, creating if necessary.
 
@@ -276,7 +275,7 @@ def setup_logging(level: str = "INFO", log_file: str | None = None) -> None:
     logging.basicConfig(level=log_level, format=log_format, handlers=handlers)
 
 
-def validate_pdb_file(file_path: Union[str, Path]) -> Path:
+def validate_pdb_file(file_path: str | Path) -> Path:
     """
     Validate that a PDB file exists and has correct extension.
 

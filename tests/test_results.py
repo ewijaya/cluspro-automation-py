@@ -1,6 +1,5 @@
 """Tests for results module."""
 
-import pytest
 import pandas as pd
 from bs4 import BeautifulSoup
 
@@ -36,7 +35,7 @@ class TestGetFinishedJobs:
         # Test can be invoked - actual filtering depends on page content parsing
         # For now just test it doesn't crash
         try:
-            result = get_finished_jobs(filter_pattern="test-.*", max_pages=1, config=mock_config)
+            _result = get_finished_jobs(filter_pattern="test-.*", max_pages=1, config=mock_config)
         except Exception:
             pass  # Some internal parsing might fail, that's ok for this test
 
@@ -185,4 +184,4 @@ class TestCheckJobFinished:
 
         result = check_job_finished("nonexistent-job", config=mock_config)
 
-        assert result == False
+        assert result is False

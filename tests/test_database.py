@@ -1,10 +1,8 @@
 """Tests for database module."""
 
-import pytest
 from datetime import datetime
-from pathlib import Path
 
-from cluspro.database import JobDatabase, Job, JobStatus
+from cluspro.database import Job, JobStatus
 
 
 class TestJobDatabase:
@@ -159,7 +157,7 @@ class TestJobDatabase:
     def test_get_all_jobs_with_status_filter(self, test_db):
         """Test getting jobs with status filter."""
         job1 = test_db.create_job("job1", "/r.pdb", "/l.pdb")
-        job2 = test_db.create_job("job2", "/r.pdb", "/l.pdb")
+        test_db.create_job("job2", "/r.pdb", "/l.pdb")  # Creates pending job
         test_db.update_status(job1.id, JobStatus.COMPLETED)
 
         completed = test_db.get_all_jobs(status=JobStatus.COMPLETED)
@@ -171,7 +169,7 @@ class TestJobDatabase:
     def test_get_batch_summary(self, test_db):
         """Test batch summary."""
         job1 = test_db.create_job("job1", "/r.pdb", "/l.pdb", batch_id="batch1")
-        job2 = test_db.create_job("job2", "/r.pdb", "/l.pdb", batch_id="batch1")
+        test_db.create_job("job2", "/r.pdb", "/l.pdb", batch_id="batch1")  # Creates pending job
 
         test_db.update_status(job1.id, JobStatus.COMPLETED)
 
@@ -186,7 +184,7 @@ class TestJobDatabase:
         job = test_db.create_job("job1", "/r.pdb", "/l.pdb")
 
         result = test_db.delete_job(job.id)
-        assert result == True
+        assert result is True
 
         deleted = test_db.get_job(job.id)
         assert deleted is None
@@ -194,7 +192,7 @@ class TestJobDatabase:
     def test_delete_nonexistent_job(self, test_db):
         """Test deleting non-existent job."""
         result = test_db.delete_job(99999)
-        assert result == False
+        assert result is False
 
 
 class TestJob:

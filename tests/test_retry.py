@@ -1,12 +1,9 @@
 """Tests for retry module."""
 
-import pytest
-from unittest.mock import MagicMock
 
+import pytest
 from selenium.common.exceptions import (
     TimeoutException,
-    WebDriverException,
-    StaleElementReferenceException,
 )
 
 
@@ -161,7 +158,7 @@ class TestGetRetryConfig:
 
     def test_get_retry_config_defaults(self):
         """Test get_retry_config returns defaults."""
-        from cluspro.retry import get_retry_config, DEFAULT_RETRY_CONFIG
+        from cluspro.retry import DEFAULT_RETRY_CONFIG, get_retry_config
 
         config = get_retry_config()
 
@@ -188,7 +185,7 @@ class TestGetRetryConfig:
 
     def test_get_retry_config_empty_dict(self):
         """Test get_retry_config with empty config."""
-        from cluspro.retry import get_retry_config, DEFAULT_RETRY_CONFIG
+        from cluspro.retry import DEFAULT_RETRY_CONFIG, get_retry_config
 
         config = get_retry_config({})
 

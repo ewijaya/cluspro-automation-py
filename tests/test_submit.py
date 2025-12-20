@@ -1,9 +1,9 @@
 """Tests for submit module."""
 
-import pytest
+from unittest.mock import MagicMock
+
 import pandas as pd
-from unittest.mock import MagicMock, patch
-from pathlib import Path
+import pytest
 
 
 class TestSubmitJob:
@@ -33,7 +33,7 @@ class TestSubmitJob:
         mocker.patch("time.sleep")
 
         # Should not raise since files exist
-        job_id = submit_job(
+        _job_id = submit_job(
             job_name="test",
             receptor_pdb=str(temp_pdb_files["receptor"]),
             ligand_pdb=str(temp_pdb_files["ligand"]),
@@ -109,7 +109,7 @@ class TestDryRun:
         results = dry_run(jobs, output=False)
 
         assert len(results) == 1
-        assert results.iloc[0]["valid"] == True
+        assert results.iloc[0]["valid"] is True
 
     def test_dry_run_detects_missing_files(self):
         """Test dry_run detects missing files."""
@@ -125,6 +125,6 @@ class TestDryRun:
 
         results = dry_run(jobs, output=False)
 
-        assert results.iloc[0]["valid"] == False
-        assert results.iloc[0]["receptor_exists"] == False
-        assert results.iloc[0]["ligand_exists"] == False
+        assert results.iloc[0]["valid"] is False
+        assert results.iloc[0]["receptor_exists"] is False
+        assert results.iloc[0]["ligand_exists"] is False

@@ -6,8 +6,13 @@ browser operations, network requests, and file downloads.
 """
 
 import logging
-from typing import Callable, Optional, Tuple, Type
+from collections.abc import Callable
 
+from selenium.common.exceptions import (
+    StaleElementReferenceException,
+    TimeoutException,
+    WebDriverException,
+)
 from tenacity import (
     RetryError,
     before_sleep_log,
@@ -15,13 +20,6 @@ from tenacity import (
     retry_if_exception_type,
     stop_after_attempt,
     wait_exponential,
-)
-
-from selenium.common.exceptions import (
-    NoSuchElementException,
-    StaleElementReferenceException,
-    TimeoutException,
-    WebDriverException,
 )
 
 logger = logging.getLogger(__name__)
@@ -35,21 +33,21 @@ DEFAULT_RETRY_CONFIG = {
 }
 
 # Selenium exceptions to retry on
-SELENIUM_RETRY_EXCEPTIONS: Tuple[Type[Exception], ...] = (
+SELENIUM_RETRY_EXCEPTIONS: tuple[type[Exception], ...] = (
     WebDriverException,
     TimeoutException,
     StaleElementReferenceException,
 )
 
 # Network-related exceptions to retry on
-NETWORK_RETRY_EXCEPTIONS: Tuple[Type[Exception], ...] = (
+NETWORK_RETRY_EXCEPTIONS: tuple[type[Exception], ...] = (
     ConnectionError,
     TimeoutError,
     OSError,
 )
 
 
-def get_retry_config(config: Optional[dict] = None) -> dict:
+def get_retry_config(config: dict | None = None) -> dict:
     """
     Get retry configuration from config or defaults.
 
@@ -73,7 +71,7 @@ def create_retry_decorator(
     min_wait: float = 1,
     max_wait: float = 30,
     multiplier: float = 2,
-    exceptions: Tuple[Type[Exception], ...] = SELENIUM_RETRY_EXCEPTIONS,
+    exceptions: tuple[type[Exception], ...] = SELENIUM_RETRY_EXCEPTIONS,
 ):
     """
     Create a retry decorator with specified configuration.
@@ -122,12 +120,12 @@ retry_download = create_retry_decorator(
 
 
 def with_retry(
-    func: Optional[Callable] = None,
+    func: Callable | None = None,
     *,
     max_attempts: int = 3,
     min_wait: float = 1,
     max_wait: float = 30,
-    exceptions: Tuple[Type[Exception], ...] = SELENIUM_RETRY_EXCEPTIONS,
+    exceptions: tuple[type[Exception], ...] = SELENIUM_RETRY_EXCEPTIONS,
 ):
     """
     Decorator to add retry logic to a function.

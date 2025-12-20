@@ -8,7 +8,6 @@ No external Selenium server required - uses webdriver-manager.
 import logging
 from contextlib import contextmanager
 from pathlib import Path
-from typing import Optional
 
 from selenium import webdriver
 from selenium.webdriver.firefox.options import Options as FirefoxOptions
@@ -16,14 +15,14 @@ from selenium.webdriver.firefox.service import Service as FirefoxService
 from selenium.webdriver.support.ui import WebDriverWait
 from webdriver_manager.firefox import GeckoDriverManager
 
-from cluspro.utils import load_config
+from cluspro.auth import AuthenticationError, Credentials
 from cluspro.retry import retry_browser
-from cluspro.auth import Credentials, AuthenticationError
+from cluspro.utils import load_config
 
 logger = logging.getLogger(__name__)
 
 
-def _find_cached_geckodriver() -> Optional[str]:
+def _find_cached_geckodriver() -> str | None:
     """
     Find the most recent cached geckodriver in ~/.wdm directory.
 
@@ -50,8 +49,8 @@ def _find_cached_geckodriver() -> Optional[str]:
 
 def create_browser(
     headless: bool = True,
-    download_dir: Optional[str] = None,
-    config: Optional[dict] = None,
+    download_dir: str | None = None,
+    config: dict | None = None,
 ) -> webdriver.Firefox:
     """
     Create and configure a Firefox browser instance.
@@ -165,8 +164,8 @@ def create_browser(
 @contextmanager
 def browser_session(
     headless: bool = True,
-    download_dir: Optional[str] = None,
-    config: Optional[dict] = None,
+    download_dir: str | None = None,
+    config: dict | None = None,
 ):
     """
     Context manager for browser sessions with automatic cleanup.
@@ -315,7 +314,7 @@ def perform_login(driver: webdriver.Firefox, credentials: Credentials) -> None:
 
 def authenticate(
     driver: webdriver.Firefox,
-    credentials: Optional[Credentials] = None,
+    credentials: Credentials | None = None,
     force_guest: bool = False,
 ) -> None:
     """

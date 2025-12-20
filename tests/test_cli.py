@@ -1,7 +1,5 @@
 """Tests for CLI module."""
 
-import pytest
-from click.testing import CliRunner
 
 
 class TestMainCommand:

@@ -1,9 +1,8 @@
 """Shared pytest fixtures for ClusPro tests."""
 
-import pytest
-from pathlib import Path
 from unittest.mock import MagicMock
 
+import pytest
 from click.testing import CliRunner
 
 

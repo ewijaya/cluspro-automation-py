@@ -4,18 +4,14 @@ Command-line interface for ClusPro automation.
 Provides CLI commands for all ClusPro automation operations.
 """
 
-import logging
 import sys
-from pathlib import Path
-from typing import Any
 
 import click
 import pandas as pd
 
-from cluspro.auth import Credentials, get_credentials, has_credentials
+from cluspro.auth import get_credentials
 from cluspro.utils import (
     expand_sequences,
-    format_job_ids,
     group_sequences,
     load_config,
     setup_logging,
@@ -624,7 +620,11 @@ def validate(
         raise click.UsageError("Use either --topology or --uniprot, not both")
 
     try:
-        from cluspro.validate import load_topology_from_json, fetch_topology_from_uniprot, validate_docking
+        from cluspro.validate import (
+            fetch_topology_from_uniprot,
+            load_topology_from_json,
+            validate_docking,
+        )
     except ImportError as e:
         click.echo(
             "Validation requires additional dependencies.\n"
@@ -679,7 +679,7 @@ def validate(
             zero_clash = sum(1 for r in valid_results if r.clashes == 0)
             high_ec = sum(1 for r in valid_results if r.ec_pct >= 90)
 
-            click.echo(f"\nSummary:")
+            click.echo("\nSummary:")
             click.echo(f"  Average EC%: {avg_ec:.1f}%")
             click.echo(f"  Zero clashes: {zero_clash}/{len(valid_results)}")
             click.echo(f"  EC% >= 90%: {high_ec}/{len(valid_results)}")

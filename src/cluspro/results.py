@@ -7,7 +7,6 @@ Parses the ClusPro results pages to find completed jobs.
 import logging
 import re
 import time
-from typing import Optional
 
 import pandas as pd
 from bs4 import BeautifulSoup
@@ -16,17 +15,17 @@ from selenium.webdriver.common.by import By
 
 from cluspro.auth import Credentials
 from cluspro.browser import authenticate, browser_session
-from cluspro.utils import expand_sequences, group_sequences, load_config
+from cluspro.utils import group_sequences, load_config
 
 logger = logging.getLogger(__name__)
 
 
 def get_finished_jobs(
-    filter_pattern: Optional[str] = None,
+    filter_pattern: str | None = None,
     max_pages: int = 50,
     headless: bool = True,
-    config: Optional[dict] = None,
-    credentials: Optional[Credentials] = None,
+    config: dict | None = None,
+    credentials: Credentials | None = None,
     force_guest: bool = False,
 ) -> pd.DataFrame:
     """
@@ -185,11 +184,11 @@ def parse_results_table(table) -> pd.DataFrame:
 
 
 def get_job_ids_compressed(
-    filter_pattern: Optional[str] = None,
+    filter_pattern: str | None = None,
     max_pages: int = 50,
     headless: bool = True,
-    config: Optional[dict] = None,
-    credentials: Optional[Credentials] = None,
+    config: dict | None = None,
+    credentials: Credentials | None = None,
     force_guest: bool = False,
 ) -> str:
     """
@@ -232,8 +231,8 @@ def get_job_ids_compressed(
 def check_job_finished(
     job_id: int,
     headless: bool = True,
-    config: Optional[dict] = None,
-    credentials: Optional[Credentials] = None,
+    config: dict | None = None,
+    credentials: Credentials | None = None,
     force_guest: bool = False,
 ) -> bool:
     """
@@ -268,11 +267,11 @@ def check_job_finished(
 
 
 def get_results_summary(
-    filter_pattern: Optional[str] = None,
+    filter_pattern: str | None = None,
     max_pages: int = 50,
     headless: bool = True,
-    config: Optional[dict] = None,
-    credentials: Optional[Credentials] = None,
+    config: dict | None = None,
+    credentials: Credentials | None = None,
     force_guest: bool = False,
 ) -> dict:
     """
